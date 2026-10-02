@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS articles (
   category_color TEXT DEFAULT 'red',
   time TEXT,
   date TEXT NOT NULL,
-  views INTEGER DEFAULT 0,
   comments_count INTEGER DEFAULT 0,
   is_special INTEGER DEFAULT 0,
   image_type TEXT NOT NULL,

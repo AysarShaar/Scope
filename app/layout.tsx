@@ -3,10 +3,10 @@ import './globals.css';
 import { ThemeProvider } from '../context/ThemeContext';
 
 export const metadata: Metadata = {
-  title: 'SCOPE MEDIA | سكوب ميديا',
+  title: 'Remix SCOPE MEDIA | سكوب ميديا',
   description: 'منصة إعلامية رقمية متكاملة - BEYOND THE HEADLINES - تغطيات حية، تحقيقات، وبرامج حصرية.',
   openGraph: {
-    title: 'SCOPE MEDIA | سكوب ميديا',
+    title: 'Remix SCOPE MEDIA | سكوب ميديا',
     description: 'منصة إعلامية رقمية متكاملة - BEYOND THE HEADLINES - تغطيات حية، تحقيقات، وبرامج حصرية.',
     siteName: 'SCOPE MEDIA',
     locale: 'ar_AR',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SCOPE MEDIA | سكوب ميديا',
+    title: 'Remix SCOPE MEDIA | سكوب ميديا',
     description: 'منصة إعلامية رقمية متكاملة - BEYOND THE HEADLINES - تغطيات حية، تحقيقات، وبرامج حصرية.',
   },
 };

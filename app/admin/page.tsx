@@ -470,7 +470,7 @@ export default function AdminPage() {
                           <th className="py-3 px-4">القسم</th>
                           <th className="py-3 px-4">الكاتب</th>
                           <th className="py-3 px-4">التاريخ</th>
-                          <th className="py-3 px-4">المشاهدات</th>
+                          <th className="py-3 px-4">التعليقات</th>
                           <th className="py-3 px-4 text-center">الإجراءات</th>
                         </tr>
                       </thead>
@@ -495,7 +495,7 @@ export default function AdminPage() {
                               {art.date}
                             </td>
                             <td className="py-3 px-4 font-mono">
-                              {art.views?.toLocaleString('ar-EG') || 0}
+                              {art.commentsCount || 0}
                             </td>
                             <td className="py-3 px-4 text-center">
                               <button

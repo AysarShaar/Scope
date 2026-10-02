@@ -169,7 +169,6 @@ const worker = {
             categoryColor: row.category_color,
             time: row.time,
             date: row.date,
-            views: row.views,
             commentsCount: row.comments_count,
             isSpecial: Boolean(row.is_special),
             imageType: row.image_type,
@@ -199,9 +198,9 @@ const worker = {
           await env.DB.prepare(
             `INSERT INTO articles (
               id, title, subtitle, category, category_slug, category_color,
-              date, views, comments_count, is_special, image_type, caption,
+              date, comments_count, is_special, image_type, caption,
               author_name, author_role, content_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
           ).bind(
             id,
             body.title,
@@ -210,7 +209,6 @@ const worker = {
             body.categorySlug || 'news',
             body.categoryColor || 'red',
             date,
-            body.views || 100,
             0,
             body.isSpecial ? 1 : 0,
             body.imageType || 'anchor_studio',
@@ -235,9 +233,6 @@ const worker = {
             return errorResponse('المقال غير موجود في أرشيف D1', 404);
           }
 
-          // Increment view count asynchronously
-          await env.DB.prepare('UPDATE articles SET views = views + 1 WHERE id = ?').bind(id).run();
-
           const article = {
             id: row.id,
             title: row.title,
@@ -247,7 +242,6 @@ const worker = {
             categoryColor: row.category_color,
             time: row.time,
             date: row.date,
-            views: row.views + 1,
             commentsCount: row.comments_count,
             isSpecial: Boolean(row.is_special),
             imageType: row.image_type,

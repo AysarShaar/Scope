@@ -26,6 +26,8 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [mobileNewsDropdownOpen, setMobileNewsDropdownOpen] = useState(false);
   const newsDropdownRef = useRef<HTMLDivElement>(null);
+  const newsButtonRef = useRef<HTMLButtonElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { id: 'home', label: 'الرئيسية', mobile: true },
@@ -54,19 +56,35 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
   ];
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (newsDropdownRef.current && !newsDropdownRef.current.contains(event.target as Node)) {
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      // Close mobile news dropdown if clicked outside both dropdown and the toggle button
+      if (
+        newsDropdownRef.current &&
+        !newsDropdownRef.current.contains(target) &&
+        newsButtonRef.current &&
+        !newsButtonRef.current.contains(target)
+      ) {
         setMobileNewsDropdownOpen(false);
       }
+      // Close language dropdown if clicked outside
+      if (langDropdownRef.current && !langDropdownRef.current.contains(target)) {
+        setLangDropdownOpen(false);
+      }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
   }, []);
 
   return (
-    <header className="w-full select-none rounded-none rounded-t-none">
-      {/* 1. Main Brand Masthead with Dubai Towers Skyline Backdrop (Completely square top, authentic light skyline) */}
-      <div className="relative bg-[#ebf3fa] dark:bg-[#0c1828] rounded-none rounded-t-none border-none py-3 sm:py-4 px-3 sm:px-6 overflow-hidden min-h-[90px] sm:min-h-[104px] flex items-center">
+    <header className="w-full select-none rounded-none rounded-t-none relative z-50">
+      {/* 1. Main Brand Masthead with Dubai Towers Skyline Backdrop - z-50 to keep language dropdown above sticky nav */}
+      <div className="relative z-50 bg-[#ebf3fa] dark:bg-[#0c1828] rounded-none rounded-t-none border-none py-3 sm:py-4 px-3 sm:px-6 min-h-[90px] sm:min-h-[104px] flex items-center">
         {/* Authentic Dubai Burj Khalifa & Skyscrapers Skyline Background */}
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden rounded-none rounded-t-none">
           {/* Dubai Towers Skyline with responsive focal point anchoring the towers */}
@@ -143,7 +161,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
             </button>
 
             {/* Language Switcher in Elegant Navy Blue */}
-            <div className="relative shrink-0">
+            <div ref={langDropdownRef} className="relative shrink-0 z-50">
               <button
                 onClick={() => setLangDropdownOpen(!langDropdownOpen)}
                 className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-[#0a1b32] hover:bg-[#122846] active:bg-[#081528] text-white border border-[#0a1b32] text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shadow-xs"
@@ -155,7 +173,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute left-0 mt-1.5 w-32 bg-[#0a1b32] border border-stone-700 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in duration-100">
+                <div className="absolute left-0 rtl:left-0 rtl:right-auto ltr:right-0 ltr:left-auto top-full mt-2 w-36 bg-[#0a1b32] border border-stone-700/80 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in duration-100">
                   <button
                     onClick={() => {
                       if (currentLang !== 'AR') onToggleLang();
@@ -193,8 +211,8 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. Secondary Main Navigation Strip (Square top, rounded bottom on mobile, centered nav items on mobile) */}
-      <nav className="w-full bg-[#07152b] text-white border-none sticky top-0 z-40 shadow-sm relative rounded-t-none rounded-b-2xl md:rounded-b-none overflow-hidden">
+      {/* 2. Secondary Main Navigation Strip (z-30 ensures masthead language dropdown z-50 displays on top) */}
+      <nav className="w-full bg-[#07152b] text-white border-none sticky top-0 z-30 shadow-sm relative rounded-t-none rounded-b-2xl md:rounded-b-none">
         <div className="max-w-[1480px] mx-auto px-3 sm:px-6 rounded-t-none rounded-b-2xl md:rounded-b-none flex items-center justify-between border-none">
           <div className="w-full flex items-center justify-center md:justify-start gap-2 sm:gap-4 md:gap-5 lg:gap-6 py-0 overflow-x-auto no-scrollbar">
             {navItems.map((item) => {
@@ -206,13 +224,14 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
                 return (
                   <div
                     key={item.id}
-                    ref={newsDropdownRef}
                     className="relative shrink-0"
                   >
                     <button
-                      onClick={() => {
-                        // On mobile: only toggle dropdown without navigating
-                        setMobileNewsDropdownOpen(!mobileNewsDropdownOpen);
+                      ref={newsButtonRef}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // On mobile: toggle dropdown cleanly
+                        setMobileNewsDropdownOpen((prev) => !prev);
                       }}
                       className={`text-[14px] sm:text-base md:text-sm font-bold md:font-semibold whitespace-nowrap px-2 sm:px-3 md:px-2.5 py-2.5 sm:py-3 transition-colors cursor-pointer relative flex items-center gap-1 sm:gap-1.5 ${
                         isActive ? 'text-white' : 'text-stone-300 hover:text-white'
@@ -228,34 +247,6 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
                         <span className="absolute bottom-0 inset-x-0 h-[3px] bg-[#dc2626] rounded-full"></span>
                       )}
                     </button>
-
-                    {/* Mobile Dropdown Menu for News Categories */}
-                    {mobileNewsDropdownOpen && (
-                      <div className="md:hidden absolute right-1/2 translate-x-1/2 top-full mt-1 w-48 bg-[#0b172a] border border-stone-700 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in duration-150">
-                        <div className="px-3.5 py-1.5 text-[11px] font-bold text-stone-400 border-b border-stone-800 mb-1">
-                          أقسام الأخبار
-                        </div>
-                        {mobileHiddenCategories.map((sub) => (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              onSelectTab(sub.id);
-                              setMobileNewsDropdownOpen(false);
-                            }}
-                            className={`w-full text-right px-3.5 py-2 text-xs transition-colors flex items-center justify-between cursor-pointer ${
-                              currentTab === sub.id
-                                ? 'bg-[#dc2626] text-white font-bold'
-                                : 'text-stone-200 hover:bg-[#152a4e] hover:text-white'
-                            }`}
-                          >
-                            <span>{sub.label}</span>
-                            {currentTab === sub.id && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 );
               }
@@ -297,6 +288,50 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Mobile Dropdown Menu for News Categories - Rendered outside overflow-x-auto so it is NEVER clipped */}
+        {mobileNewsDropdownOpen && (
+          <div
+            ref={newsDropdownRef}
+            className="md:hidden absolute top-full inset-x-2 sm:inset-x-4 mt-1.5 bg-[#0b172a]/95 backdrop-blur-md border border-stone-700/80 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+          >
+            <div className="flex items-center justify-between px-3 py-1.5 text-[11px] font-bold text-stone-400 border-b border-stone-800/80 mb-2">
+              <span className="flex items-center gap-2">
+                <span>أقسام وتصنيفات الأخبار</span>
+                <span className="text-[10px] text-stone-500 font-mono bg-stone-900/60 px-1.5 py-0.5 rounded">8 أقسام</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileNewsDropdownOpen(false)}
+                className="text-[11px] text-stone-400 hover:text-white px-2 py-0.5 rounded-md bg-stone-800/80 hover:bg-stone-700 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <span>إغلاق</span>
+                <span className="font-bold text-xs">✕</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {mobileHiddenCategories.map((sub) => (
+                <button
+                  key={sub.id}
+                  onClick={() => {
+                    onSelectTab(sub.id);
+                    setMobileNewsDropdownOpen(false);
+                  }}
+                  className={`text-right px-3 py-2 text-xs rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                    currentTab === sub.id
+                      ? 'bg-[#dc2626] text-white font-bold shadow-xs'
+                      : 'text-stone-200 hover:bg-[#152a4e] hover:text-white'
+                  }`}
+                >
+                  <span>{sub.label}</span>
+                  {currentTab === sub.id && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
     </header>
   );
