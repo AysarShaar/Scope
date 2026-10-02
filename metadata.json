@@ -1,0 +1,8 @@
+{
+  "name": "Remix SCOPE MEDIA | سكوب ميديا",
+  "description": "منصة إعلامية رقمية متكاملة - BEYOND THE HEADLINES - تغطيات حية، تحقيقات، وبرامج حصرية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

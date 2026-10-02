@@ -1,0 +1,16 @@
+name = "scope-media-worker"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "scope_media_db"
+# Replace database_id with the one generated from `npx wrangler d1 create scope_media_db`
+database_id = "YOUR_D1_DATABASE_UUID_HERE"
+
+# Environment Variables
+[vars]
+# You can also set secrets securely via: npx wrangler secret put ADMIN_API_KEY
+# ADMIN_API_KEY = "your-admin-secret-token"
