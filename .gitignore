@@ -69,7 +69,6 @@ skills-lock.json
 local/
 *.local
 local-run*
-lib/localD1Adapter*
 
 # Termux & Android environment
 .termux/

@@ -18,7 +18,6 @@ import {
   User,
   X,
   Filter,
-  Sparkles,
 } from 'lucide-react';
 import { ScopeArticle } from '../../../data/scopeData';
 import { IsoDatePicker } from './IsoDatePicker';
@@ -731,10 +730,9 @@ export default function ArticlesList({
                             <button
                               onClick={() => handleRemoveSpecial(art)}
                               disabled={removingSpecialId === art.id}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                              className="inline-flex items-center px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                               title="إزالة من المقالات المميزة"
                             >
-                              <Sparkles size={12} className="text-amber-500" />
                               <span>إزالة من المميزة</span>
                             </button>
                           )}
@@ -809,6 +807,15 @@ export default function ArticlesList({
                       <Edit3 size={14} />
                       <span>تعديل</span>
                     </button>
+                    {canManageArticles && (art.isSpecial || isSpecialOnly) && (
+                      <button
+                        onClick={() => handleRemoveSpecial(art)}
+                        disabled={removingSpecialId === art.id}
+                        className="flex-1 h-10 inline-flex items-center justify-center rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 disabled:opacity-50 cursor-pointer transition-colors"
+                      >
+                        <span>إزالة من المميزة</span>
+                      </button>
+                    )}
                     {!isPending && (
                       <a
                         href={`/news/${art.id}`}
@@ -828,17 +835,6 @@ export default function ArticlesList({
                       <Trash2 size={16} />
                     </button>
                   </div>
-
-                  {canManageArticles && (art.isSpecial || isSpecialOnly) && (
-                    <button
-                      onClick={() => handleRemoveSpecial(art)}
-                      disabled={removingSpecialId === art.id}
-                      className="w-full mt-2.5 h-9 inline-flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 disabled:opacity-50 cursor-pointer transition-colors"
-                    >
-                      <Sparkles size={14} className="text-amber-500" />
-                      <span>إزالة من المميزة</span>
-                    </button>
-                  )}
                 </li>
               );
             })}
