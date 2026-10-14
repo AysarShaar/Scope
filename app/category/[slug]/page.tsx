@@ -5,6 +5,8 @@ import { getServerArticlesPaginated } from '../../../lib/server/articles';
 import { getServerBreaking } from '../../../lib/server/breaking';
 import { categoryTranslations } from '../../../lib/translations';
 import { getSiteUrl } from '../../../lib/site';
+import { getCategorySeo, SITE_NAME } from '../../../lib/seo';
+import { safeJsonLd } from '../../../lib/safeJsonLd';
 
 function parsePage(raw?: string): number {
   const parsed = parseInt(raw || '1', 10);
@@ -29,16 +31,40 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const { page: rawPage } = await searchParams;
   const page = parsePage(rawPage);
   const label = categoryTranslations[slug].AR;
-  const base = `${getSiteUrl()}/category/${slug}`;
+  const siteUrl = getSiteUrl();
+  const seo = getCategorySeo(slug, page, label);
+  const base = `${siteUrl}/category/${slug}`;
   // Page 1 is the canonical URL of the section; deeper pages are self-canonical so they stay crawlable.
-  const canonical = page > 1 ? `${base}?page=${page}` : base;
-  const title = page > 1 ? `${label} - الصفحة ${page}` : `${label} - آخر الأخبار والتقارير`;
-  const description = `تابع أحدث أخبار وتقارير قسم ${label} على SCOPE MEDIA | سكوب ميديا: تغطيات موثقة وتحليلات معمّقة.`;
+  const canonical = `${base}${seo.canonicalSuffix}`;
+  const ogImageUrl = `${siteUrl}/og-default.png`;
+
   return {
-    title,
-    description,
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords,
     alternates: { canonical },
-    openGraph: { title, description, url: canonical, type: 'website', locale: 'ar_AR', siteName: 'SCOPE MEDIA | سكوب ميديا' },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+      url: canonical,
+      type: 'website',
+      locale: 'ar_AR',
+      siteName: SITE_NAME,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: seo.title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: seo.title,
+      description: seo.description,
+      images: [ogImageUrl],
+    },
   };
 }
 
@@ -50,21 +76,74 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
   const { page: rawPage } = await searchParams;
   const page = parsePage(rawPage);
+  const label = categoryTranslations[slug].AR;
+  const siteUrl = getSiteUrl();
+  const seo = getCategorySeo(slug, page, label);
+  const canonicalUrl = `${siteUrl}/category/${slug}${seo.canonicalSuffix}`;
 
   const [result, breaking] = await Promise.all([
     getServerArticlesPaginated(slug, page, PAGE_SIZE),
     getServerBreaking(12),
   ]);
 
+  const jsonLdCollection = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': canonicalUrl,
+    url: canonicalUrl,
+    name: seo.title,
+    description: seo.description,
+    inLanguage: 'ar',
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}/#website`,
+      name: SITE_NAME,
+      url: siteUrl,
+    },
+    about: {
+      '@type': 'Thing',
+      name: label,
+    },
+  };
+
+  const jsonLdBreadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'الرئيسية',
+        item: siteUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: label,
+        item: `${siteUrl}/category/${slug}`,
+      },
+    ],
+  };
+
   return (
-    <CategoryClient
-      slug={slug}
-      page={page}
-      articles={result.articles}
-      total={result.total}
-      totalPages={result.totalPages}
-      hasMore={result.hasMore}
-      breaking={breaking}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLdCollection) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLdBreadcrumb) }}
+      />
+      <CategoryClient
+        slug={slug}
+        page={page}
+        articles={result.articles}
+        total={result.total}
+        totalPages={result.totalPages}
+        hasMore={result.hasMore}
+        breaking={breaking}
+      />
+    </>
   );
 }

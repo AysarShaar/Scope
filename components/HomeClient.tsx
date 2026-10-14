@@ -20,6 +20,9 @@ export default function HomeClient({ initialData }: { initialData: HomeBootstrap
 
   const [articles, setArticles] = useState<ScopeArticle[]>(initialData?.articles ?? []);
   const [special, setSpecial] = useState<ScopeArticle | null>(initialData?.special ?? null);
+  const [specialArticles, setSpecialArticles] = useState<ScopeArticle[]>(
+    initialData?.specialArticles ?? (initialData?.special ? [initialData.special] : [])
+  );
   const [programs, setPrograms] = useState<ScopeShow[]>(initialData?.programs ?? []);
   const [isLoading, setIsLoading] = useState<boolean>(!initialData);
 
@@ -62,6 +65,7 @@ export default function HomeClient({ initialData }: { initialData: HomeBootstrap
         if (isMounted) {
           setArticles(data.articles || []);
           setSpecial(data.special ?? null);
+          setSpecialArticles(data.specialArticles || (data.special ? [data.special] : []));
           setPrograms(data.programs || []);
         }
       } catch (err) {
@@ -107,6 +111,7 @@ export default function HomeClient({ initialData }: { initialData: HomeBootstrap
         <div className="space-y-7">
           <ScopeHeroGrid
             special={special}
+            specialArticles={specialArticles}
             articles={articles}
             shows={programs}
             isLoading={isLoading}

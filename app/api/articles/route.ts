@@ -25,11 +25,12 @@ async function listArticles(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category") || undefined;
   const search = searchParams.get("search")?.trim() || undefined;
-  const fromDate = searchParams.get("from") || searchParams.get("startDate") || undefined;
-  const toDate = searchParams.get("to") || searchParams.get("endDate") || undefined;
-  const exactDate = searchParams.get("date") || undefined;
+  const fromDate = searchParams.get("from") || searchParams.get("startDate") || searchParams.get("fromDate") || undefined;
+  const toDate = searchParams.get("to") || searchParams.get("endDate") || searchParams.get("toDate") || undefined;
+  const exactDate = searchParams.get("date") || searchParams.get("exactDate") || undefined;
   const author = searchParams.get("author") || undefined;
   const statusParam = searchParams.get("status") || undefined;
+  const specialParam = searchParams.get("special") || searchParams.get("isSpecial");
   const sortParam = searchParams.get("sort") === "asc" ? "asc" : "desc";
   const isFull = searchParams.get("full") === "true";
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -77,6 +78,12 @@ async function listArticles(request: NextRequest) {
       }
       if (exactDate && exactDate !== "all") {
         conditions.push(sql`date(${articles.createdAt}) = date(${exactDate})`);
+      }
+
+      if (specialParam === "true") {
+        conditions.push(eq(articles.isSpecial, true));
+      } else if (specialParam === "false") {
+        conditions.push(eq(articles.isSpecial, false));
       }
 
       if (search) {

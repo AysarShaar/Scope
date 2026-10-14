@@ -18,6 +18,7 @@ import {
   User,
   X,
   Filter,
+  Sparkles,
 } from 'lucide-react';
 import { ScopeArticle } from '../../../data/scopeData';
 import { IsoDatePicker } from './IsoDatePicker';
@@ -90,6 +91,7 @@ interface Props {
   onDelete: (id: string, title: string) => void;
   onApprove?: (id: string, title: string) => Promise<void>;
   userRole: 'admin' | 'editor_in_chief' | 'editor';
+  isSpecialOnly?: boolean;
 }
 
 export default function ArticlesList({
@@ -98,6 +100,7 @@ export default function ArticlesList({
   onDelete,
   onApprove,
   userRole,
+  isSpecialOnly = false,
 }: Props) {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -176,6 +179,9 @@ export default function ArticlesList({
       if (catFilter !== 'all') {
         params.set('category', catFilter);
       }
+      if (isSpecialOnly) {
+        params.set('special', 'true');
+      }
       if (authorFilter !== 'all') {
         params.set('author', authorFilter);
       }
@@ -233,7 +239,32 @@ export default function ArticlesList({
     exactDate,
     customFrom,
     customTo,
+    isSpecialOnly,
   ]);
+
+  const [removingSpecialId, setRemovingSpecialId] = useState<string | null>(null);
+
+  const handleRemoveSpecial = async (art: ScopeArticle) => {
+    if (!confirm(`هل أنت متأكد من إزالة المقال:\n"${art.title}"\nمن المقالات المميزة؟`)) return;
+    setRemovingSpecialId(art.id);
+    try {
+      const res = await fetch(`/api/articles/${encodeURIComponent(art.id)}/special`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isSpecial: false }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) {
+        await fetchArticlesFromDatabase();
+      } else {
+        alert(data?.error || 'فشل تحديث حالة المقال المميز');
+      }
+    } catch {
+      alert('حدث خطأ أثناء الاتصال بالخادم لإزالة المقال من المميزة');
+    } finally {
+      setRemovingSpecialId(null);
+    }
+  };
 
   useEffect(() => {
     fetchArticlesFromDatabase();
@@ -293,14 +324,16 @@ export default function ArticlesList({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              إدارة الأخبار والمقالات
+              {isSpecialOnly ? 'المقالات المميزة' : 'إدارة الأخبار والمقالات'}
             </h1>
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono">
               {totalCount} مادة
             </span>
           </div>
           <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            استعلام لحظي من قاعدة البيانات مع تقسيم كل 10 مواد لتسريع التصفح
+            {isSpecialOnly
+              ? 'عرض وإدارة المقالات المميزة المعروضة في Hero الموقع الرئيسي'
+              : 'استعلام لحظي من قاعدة البيانات مع تقسيم كل 10 مواد لتسريع التصفح'}
           </p>
         </div>
 
@@ -694,6 +727,18 @@ export default function ArticlesList({
                             <Edit3 size={14} />
                           </button>
 
+                          {canManageArticles && (art.isSpecial || isSpecialOnly) && (
+                            <button
+                              onClick={() => handleRemoveSpecial(art)}
+                              disabled={removingSpecialId === art.id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                              title="إزالة من المقالات المميزة"
+                            >
+                              <Sparkles size={12} className="text-amber-500" />
+                              <span>إزالة من المميزة</span>
+                            </button>
+                          )}
+
                           <button
                             onClick={() => handleDeleteItem(art)}
                             className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
@@ -783,6 +828,17 @@ export default function ArticlesList({
                       <Trash2 size={16} />
                     </button>
                   </div>
+
+                  {canManageArticles && (art.isSpecial || isSpecialOnly) && (
+                    <button
+                      onClick={() => handleRemoveSpecial(art)}
+                      disabled={removingSpecialId === art.id}
+                      className="w-full mt-2.5 h-9 inline-flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 disabled:opacity-50 cursor-pointer transition-colors"
+                    >
+                      <Sparkles size={14} className="text-amber-500" />
+                      <span>إزالة من المميزة</span>
+                    </button>
+                  )}
                 </li>
               );
             })}

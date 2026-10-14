@@ -1,5 +1,4 @@
 'use client';
-import { FileText, Radio, Clock, Eye, ArrowUpRight } from 'lucide-react';
 import { ScopeArticle, BreakingItem } from '../../../data/scopeData';
 
 interface Props {
@@ -14,10 +13,10 @@ export default function Dashboard({ articles, breaking, onNavigate }: Props) {
   const totalArticles = articles.length;
 
   const stats = [
-    { label: 'المقالات المنشورة', value: publishedCount, icon: FileText, onClick: () => onNavigate('articles') },
-    { label: 'بانتظار الاعتماد', value: pendingCount, icon: Clock, onClick: () => onNavigate('articles'), isAlert: pendingCount > 0 },
-    { label: 'الأخبار العاجلة النشطة', value: breaking.length, icon: Radio, onClick: () => onNavigate('breaking') },
-    { label: 'إجمالي المواد المسترجعة', value: totalArticles, icon: FileText, onClick: () => onNavigate('articles') },
+    { label: 'المقالات المنشورة', value: publishedCount, onClick: () => onNavigate('articles') },
+    { label: 'بانتظار الاعتماد', value: pendingCount, onClick: () => onNavigate('articles'), isAlert: pendingCount > 0 },
+    { label: 'الأخبار العاجلة النشطة', value: breaking.length, onClick: () => onNavigate('breaking') },
+    { label: 'إجمالي المواد المسترجعة', value: totalArticles, onClick: () => onNavigate('articles') },
   ];
 
   const recentArticles = articles.slice(0, 6);
@@ -34,21 +33,18 @@ export default function Dashboard({ articles, breaking, onNavigate }: Props) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {stats.map(({ label, value, icon: Icon, onClick, isAlert }) => (
+        {stats.map(({ label, value, onClick, isAlert }) => (
           <button
             key={label}
             onClick={onClick}
-            className={`p-3 sm:p-4 rounded-xl border text-right transition-colors cursor-pointer flex flex-col justify-between h-24 sm:h-28 ${
+            className={`p-3.5 sm:p-4 rounded-xl border text-right transition-colors cursor-pointer flex flex-col justify-between h-24 sm:h-26 ${
               isAlert
                 ? 'bg-amber-50/50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/50'
                 : 'bg-white dark:bg-[#0c101c] border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">{label}</span>
-              <Icon size={14} className={isAlert ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'} />
-            </div>
-            <div className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${isAlert ? 'text-amber-700 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`}>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">{label}</span>
+            <div className={`text-2xl sm:text-3xl font-bold font-mono tracking-tight ${isAlert ? 'text-amber-700 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`}>
               {value}
             </div>
           </button>
@@ -60,10 +56,9 @@ export default function Dashboard({ articles, breaking, onNavigate }: Props) {
           <span className="text-xs font-bold text-slate-900 dark:text-white">أحدث المواد المنشورة</span>
           <button
             onClick={() => onNavigate('articles')}
-            className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+            className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer font-medium"
           >
-            <span>عرض كل المواد</span>
-            <ArrowUpRight size={13} />
+            <span>عرض كل المواد ←</span>
           </button>
         </div>
 

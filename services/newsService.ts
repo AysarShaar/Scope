@@ -11,6 +11,7 @@ export interface PaginatedArticlesResult {
 
 export interface HomeBootstrapData {
   articles: ScopeArticle[];
+  specialArticles?: ScopeArticle[];
   /** Newest published article flagged is_special (tall hero box); null when none is flagged. */
   special?: ScopeArticle | null;
   programs: ScopeShow[];

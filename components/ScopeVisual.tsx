@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { ScopeArticle } from '../data/scopeData';
-import { optimizeCloudinaryUrl } from '../lib/cloudinary';
 
 interface ScopeVisualProps {
   type?: ScopeArticle['imageType'] | string;
@@ -106,7 +105,7 @@ export const ScopeVisual: React.FC<ScopeVisualProps> = ({
     'anchor_studio';
   const data = editorialImageMap[resolvedThemeKey];
   const rawSource = imageUrl && imageUrl.trim().length > 0 ? imageUrl : data.url;
-  const imageSource = optimizeCloudinaryUrl(rawSource);
+  const imageSource = rawSource;
 
   return (
     <div className={`relative overflow-hidden w-full h-full bg-[#0d1624] ${className}`}>

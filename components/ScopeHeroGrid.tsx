@@ -15,6 +15,7 @@ interface ScopeHeroGridProps {
   articles?: ScopeArticle[];
   /** Article for the tall box (newest one flagged is_special). Falls back to the next latest article. */
   special?: ScopeArticle | null;
+  specialArticles?: ScopeArticle[];
   shows?: ScopeShow[];
   isLoading?: boolean;
   onOpenShow: (show: ScopeShow) => void;
@@ -109,6 +110,7 @@ export const ScopeProgramsRow: React.FC<{
 export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
   articles = [],
   special = null,
+  specialArticles,
   shows,
   isLoading = false,
   onOpenShow,
@@ -123,16 +125,46 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
 
   const ForwardArrow = dir === 'rtl' ? ArrowLeft : ArrowRight;
 
-  // The tall box shows the newest special article; without one it shows the next latest article.
+  // The tall box shows the newest special article (1st of 4); without one it falls back to standard articles.
   const tallBoxArticle = useMemo(() => {
+    if (specialArticles && specialArticles.length > 0) {
+      return specialArticles[0];
+    }
+    if (special) return special;
     if (!articles || articles.length === 0) return null;
-    return special ?? articles[3] ?? articles[0];
-  }, [articles, special]);
+    return articles[3] ?? articles[0];
+  }, [specialArticles, special, articles]);
 
+  // The 3 smaller boxes show the next 3 special articles, falling back to latest published articles.
   const rightHeroCards = useMemo(() => {
-    if (!articles || articles.length === 0) return [];
-    return articles.filter((a) => a.id !== tallBoxArticle?.id).slice(0, 3);
-  }, [articles, tallBoxArticle]);
+    const list: ScopeArticle[] = [];
+    const usedIds = new Set<string>();
+    if (tallBoxArticle) usedIds.add(tallBoxArticle.id);
+
+    // Pick 3 from specialArticles (items 1, 2, 3)
+    if (specialArticles && specialArticles.length > 1) {
+      for (let i = 1; i < specialArticles.length && list.length < 3; i++) {
+        const item = specialArticles[i];
+        if (!usedIds.has(item.id)) {
+          list.push(item);
+          usedIds.add(item.id);
+        }
+      }
+    }
+
+    // If still less than 3, fill from articles
+    if (articles && articles.length > 0) {
+      for (const a of articles) {
+        if (list.length >= 3) break;
+        if (!usedIds.has(a.id)) {
+          list.push(a);
+          usedIds.add(a.id);
+        }
+      }
+    }
+
+    return list;
+  }, [articles, specialArticles, tallBoxArticle]);
 
   const featuredNews = useMemo(() => {
     if (!articles || articles.length === 0) return [];
@@ -141,9 +173,10 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
     if (tallBoxArticle) {
       excludedIds.add(tallBoxArticle.id);
     }
+    specialArticles?.forEach((a) => excludedIds.add(a.id));
 
     return articles.filter((a) => !excludedIds.has(a.id)).slice(0, 8);
-  }, [articles, rightHeroCards, tallBoxArticle]);
+  }, [articles, rightHeroCards, tallBoxArticle, specialArticles]);
 
   if (isLoading) {
     return <ScopeHeroGridSkeleton />;
@@ -246,14 +279,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/30 pointer-events-none" />
 
-              <div className="relative z-10 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 bg-black/65 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-[#A42424] animate-pulse"></span>
-                  <span className="font-bold text-xs text-white">
-                    {lang === 'AR' ? 'تغطية خاصة' : 'Special Coverage'}
-                  </span>
-                </div>
-
+              <div className={`relative z-10 flex items-center ${dir === 'rtl' ? 'justify-end' : 'justify-start'} gap-2`}>
                 <span className="px-2.5 py-1 rounded-full bg-[#A42424] text-white text-[10px] sm:text-[11px] font-bold shadow-xs">
                   {tallBoxArticle.category}
                 </span>

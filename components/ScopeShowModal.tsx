@@ -71,11 +71,40 @@ export const ScopeShowModal: React.FC<ScopeShowModalProps> = ({
   const host = (lang === 'EN' && tr?.host.EN) || show.host;
   const description = (lang === 'EN' && tr?.description.EN) || show.description;
 
-  const handleShare = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
+  const handleShare = async () => {
+    if (typeof window === 'undefined') return;
+    const shareUrl = window.location.href;
+    const shareTitle = `${show.title} | ${activeEpisodeTitle || show.latestEpisode || ''}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareTitle,
+          url: shareUrl,
+        });
+        return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+    }
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      setTimeout(() => setCopied(false), 2400);
+    } catch {
+      // fallback
     }
   };
 
@@ -144,12 +173,18 @@ export const ScopeShowModal: React.FC<ScopeShowModalProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleShare}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs rounded-full flex items-center gap-1.5 cursor-pointer relative transition-colors"
+                className={`h-9 px-3.5 text-xs font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer relative transition-all duration-200 active:scale-95 border shadow-2xs ${
+                  copied
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-[0_4px_12px_rgba(16,185,129,0.3)]'
+                    : 'bg-slate-800/90 hover:bg-[#A42424] text-slate-200 hover:text-white border-slate-700/80 hover:border-[#A42424] shadow-xs'
+                }`}
+                title={copied ? (lang === 'EN' ? 'Link Copied!' : 'تم نسخ الرابط!') : (lang === 'EN' ? 'Share Episode' : 'مشاركة الحلقة')}
+                aria-label={lang === 'EN' ? 'Share Episode' : 'مشاركة الحلقة'}
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Share2 className="w-3.5 h-3.5" />}
                 <span>
                   {copied
-                    ? lang === 'EN' ? 'Link Copied!' : 'تم نسخ الرابط!'
+                    ? lang === 'EN' ? 'Copied!' : 'تم النسخ!'
                     : lang === 'EN' ? 'Share Episode' : 'مشاركة الحلقة'}
                 </span>
               </button>

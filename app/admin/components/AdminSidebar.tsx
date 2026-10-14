@@ -1,15 +1,6 @@
 'use client';
+
 import {
-  FileText,
-  Radio,
-  Settings,
-  LayoutDashboard,
-  LogOut,
-  RefreshCw,
-  Users,
-  Sun,
-  Moon,
-  Tv,
   X,
 } from 'lucide-react';
 import Link from '../../../components/NavLink';
@@ -17,7 +8,7 @@ import Image from 'next/image';
 import { useTheme } from '../../../context/ThemeContext';
 import { ScopeLogo } from '../../../components/ScopeLogo';
 
-export type AdminSection = 'dashboard' | 'articles' | 'breaking' | 'programs' | 'editors' | 'settings';
+export type AdminSection = 'dashboard' | 'articles' | 'special_articles' | 'breaking' | 'programs' | 'editors' | 'settings';
 
 interface Props {
   current: AdminSection;
@@ -26,6 +17,7 @@ interface Props {
   onRefresh: () => void;
   isLoading: boolean;
   articlesCount: number;
+  specialCount?: number;
   breakingCount: number;
   programsCount?: number;
   editorsCount?: number;
@@ -39,13 +31,14 @@ interface Props {
   };
 }
 
-const NAV = [
-  { id: 'dashboard' as AdminSection, label: 'لوحة التحكم', icon: LayoutDashboard },
-  { id: 'articles' as AdminSection, label: 'المقالات', icon: FileText },
-  { id: 'breaking' as AdminSection, label: 'الأخبار العاجلة', icon: Radio },
-  { id: 'programs' as AdminSection, label: 'البرامج والتغطيات', icon: Tv },
-  { id: 'editors' as AdminSection, label: 'فريق التحرير', icon: Users },
-  { id: 'settings' as AdminSection, label: 'الإعدادات', icon: Settings },
+const NAV: { id: AdminSection; label: string }[] = [
+  { id: 'dashboard', label: 'لوحة التحكم' },
+  { id: 'articles', label: 'المقالات' },
+  { id: 'special_articles', label: 'المقالات المميزة' },
+  { id: 'breaking', label: 'الأخبار العاجلة' },
+  { id: 'programs', label: 'البرامج والتغطيات' },
+  { id: 'editors', label: 'فريق التحرير' },
+  { id: 'settings', label: 'الإعدادات' },
 ];
 
 export default function AdminSidebar({
@@ -55,6 +48,7 @@ export default function AdminSidebar({
   onRefresh,
   isLoading,
   articlesCount,
+  specialCount = 0,
   breakingCount,
   programsCount = 0,
   editorsCount = 0,
@@ -156,12 +150,14 @@ export default function AdminSidebar({
           )}
         </div>
 
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-          {filteredNav.map(({ id, label, icon: Icon }) => {
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
+          {filteredNav.map(({ id, label }) => {
             const isActive = current === id;
             const badge =
               id === 'articles'
                 ? articlesCount
+                : id === 'special_articles'
+                ? specialCount
                 : id === 'breaking'
                 ? breakingCount
                 : id === 'programs'
@@ -174,19 +170,16 @@ export default function AdminSidebar({
               <button
                 key={id}
                 onClick={() => handleSelect(id)}
-                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
                   isActive
-                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 font-medium'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <Icon size={16} className="shrink-0 opacity-80" />
-                  <span>{label}</span>
-                </div>
+                <span>{label}</span>
                 {badge > 0 && (
                   <span
-                    className={`text-[10px] font-mono font-medium px-1.5 py-0.2 rounded ${
+                    className={`text-[10px] font-mono font-medium px-1.5 py-0.5 rounded ${
                       isActive
                         ? 'bg-slate-800 text-slate-200 dark:bg-slate-200 dark:text-slate-800'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
@@ -200,39 +193,29 @@ export default function AdminSidebar({
           })}
         </nav>
 
-        <div className="px-3 pt-3 border-t border-slate-100 dark:border-slate-800/70 flex flex-col gap-0.5">
+        <div className="px-3 pt-3 pb-2 border-t border-slate-100 dark:border-slate-800/70 flex flex-col gap-0.5">
           <button
             onClick={toggleTheme}
             type="button"
-            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
           >
-            {theme === 'dark' ? (
-              <>
-                <Sun size={15} className="text-amber-400" />
-                <span>الوضع الفاتح</span>
-              </>
-            ) : (
-              <>
-                <Moon size={15} className="text-slate-500" />
-                <span>الوضع الداكن</span>
-              </>
-            )}
+            <span>المظهر</span>
+            <span className="text-[11px] font-medium text-slate-400">{theme === 'dark' ? 'داكن' : 'فاتح'}</span>
           </button>
 
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 transition-colors disabled:opacity-50 cursor-pointer"
+            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
-            <span>تحديث</span>
+            <span>تحديث البيانات</span>
+            {isLoading && <span className="text-[10px] text-rose-500 font-mono">جاري...</span>}
           </button>
 
           <button
             onClick={onLogout}
-            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer mt-1"
+            className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer mt-0.5"
           >
-            <LogOut size={15} />
             <span>تسجيل الخروج</span>
           </button>
         </div>

@@ -3,12 +3,13 @@ import { getDb } from '../../db/client';
 import { settings } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { ScopeArticle, ScopeShow, BreakingItem } from '../../data/scopeData';
-import { getServerArticles, getServerSpecialArticle } from './articles';
+import { getServerArticles, getServerSpecialArticle, getServerSpecialArticles } from './articles';
 import { getServerPrograms } from './programs';
 import { getServerBreaking } from './breaking';
 
 export interface HomeBootstrap {
   articles: ScopeArticle[];
+  specialArticles: ScopeArticle[];
   special: ScopeArticle | null;
   programs: ScopeShow[];
   breaking: BreakingItem[];
@@ -30,16 +31,16 @@ async function getLiveStreamId(): Promise<string> {
 
 /**
  * Everything the home page needs in one go: the latest articles, the programs, the breaking ticker
- * and the live stream id. The browser used to fire four separate API requests (= four Worker
- * invocations) for this on every visit.
+ * and the live stream id.
  */
 export async function getHomeBootstrap(articleLimit = 14): Promise<HomeBootstrap> {
-  const [articles, special, programs, breakingItems, liveStreamId] = await Promise.all([
+  const [articles, specialArticles, programs, breakingItems, liveStreamId] = await Promise.all([
     getServerArticles(undefined, articleLimit),
-    getServerSpecialArticle(),
+    getServerSpecialArticles(4),
     getServerPrograms(),
     getServerBreaking(12),
     getLiveStreamId(),
   ]);
-  return { articles, special, programs, breaking: breakingItems, liveStreamId };
+  const special = specialArticles[0] || null;
+  return { articles, specialArticles, special, programs, breaking: breakingItems, liveStreamId };
 }

@@ -1,5 +1,4 @@
 import sanitizeHtml from 'sanitize-html';
-import { optimizeCloudinaryUrl } from './cloudinary';
 
 // Re-exported so existing imports (and tests) keep working. Public pages should import from './articleText'.
 export { isHtmlBlock, blockToText, contentToText } from './articleText';
@@ -25,7 +24,6 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
       tagName: 'img',
       attribs: {
         ...attribs,
-        src: attribs.src ? optimizeCloudinaryUrl(attribs.src) : attribs.src,
         loading: 'lazy',
       },
     }),

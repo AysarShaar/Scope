@@ -142,10 +142,10 @@ export const getServerArticlesPaginated = cache(
   },
 );
 
-/** The newest published article flagged as special (shown in the home page's tall hero box), or null. */
-export const getServerSpecialArticle = cache(async (): Promise<ScopeArticle | null> => {
+/** The newest published articles flagged as special (shown in the home page's hero section). */
+export const getServerSpecialArticles = cache(async (limit = 4): Promise<ScopeArticle[]> => {
   const env = getCloudflareEnv();
-  if (!env?.DB) return null;
+  if (!env?.DB) return [];
   try {
     const db = getDb(env.DB);
     const rows = await db
@@ -170,10 +170,16 @@ export const getServerSpecialArticle = cache(async (): Promise<ScopeArticle | nu
       .from(articles)
       .where(and(eq(articles.status, 'published'), eq(articles.isSpecial, true)))
       .orderBy(desc(articles.createdAt))
-      .limit(1);
-    return rows[0] ? rowToArticle(rows[0], false) : null;
+      .limit(limit);
+    return rows.map((r) => rowToArticle(r, false));
   } catch (err) {
-    console.error('[getServerSpecialArticle] direct D1 error:', err);
-    return null;
+    console.error('[getServerSpecialArticles] direct D1 error:', err);
+    return [];
   }
+});
+
+/** The newest published article flagged as special (shown in the home page's tall hero box), or null. */
+export const getServerSpecialArticle = cache(async (): Promise<ScopeArticle | null> => {
+  const list = await getServerSpecialArticles(1);
+  return list[0] || null;
 });

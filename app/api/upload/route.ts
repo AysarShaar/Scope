@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareEnv } from "../../../lib/cloudflare";
 import { authenticateRequest } from "../../../lib/auth";
-import { optimizeCloudinaryUrl } from "../../../lib/cloudinary";
 import { errorMessage } from '../../../lib/errors';
 import {
   IMAGE_CACHE_CONTROL,
@@ -118,98 +117,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (env?.IMAGES) {
-      const key = buildImageKey(detected.ext);
-      await env.IMAGES.put(key, await blob.arrayBuffer(), {
-        httpMetadata: {
-          contentType: detected.mime,
-          cacheControl: IMAGE_CACHE_CONTROL,
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        url: publicImageUrl(getImagesBaseUrl(), key),
-        key,
-        format: detected.ext,
-        bytes: blob.size,
-      });
-    }
-
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-    if (!cloudName) {
+    if (!env?.IMAGES) {
       return NextResponse.json(
         {
           success: false,
-          error: "خدمة الرفع السحابي تتطلب ضبط أسرار Cloudinary في متغيرات البيئة.",
+          error: "خدمة تخزين الصور غير مهيأة: يرجى تفعيل مستودع R2 (IMAGES) في Cloudflare.",
         },
-        { status: 500 },
+        { status: 503 },
       );
     }
 
-    const cloudinaryFormData = new FormData();
-    cloudinaryFormData.append("file", file);
-    cloudinaryFormData.append("folder", "scope_media_articles");
-
-    const timestamp = Math.round(Date.now() / 1000);
-
-    if (apiKey && apiSecret) {
-      const stringToSign = `folder=scope_media_articles&timestamp=${timestamp}${apiSecret}`;
-      const msgBuffer = new TextEncoder().encode(stringToSign);
-      const hashBuffer = await crypto.subtle.digest("SHA-1", msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const signature = hashArray
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      cloudinaryFormData.append("api_key", apiKey);
-      cloudinaryFormData.append("timestamp", timestamp.toString());
-      cloudinaryFormData.append("signature", signature);
-    } else if (uploadPreset) {
-      cloudinaryFormData.append("upload_preset", uploadPreset);
-    } else {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "يرجى توفير إما CLOUDINARY_UPLOAD_PRESET أو (CLOUDINARY_API_KEY و CLOUDINARY_API_SECRET) في الخادم.",
-        },
-        { status: 500 },
-      );
-    }
-
-    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-    const res = await fetch(cloudinaryUrl, {
-      method: "POST",
-      body: cloudinaryFormData,
+    const key = buildImageKey(detected.ext);
+    await env.IMAGES.put(key, await blob.arrayBuffer(), {
+      httpMetadata: {
+        contentType: detected.mime,
+        cacheControl: IMAGE_CACHE_CONTROL,
+      },
     });
 
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: data.error?.message || "فشل الرفع إلى خوادم Cloudinary.",
-          details: data,
-        },
-        { status: 400 },
-      );
-    }
-
-    const rawUrl = data.secure_url || data.url;
     return NextResponse.json({
       success: true,
-      url: optimizeCloudinaryUrl(rawUrl),
-      publicId: data.public_id,
-      width: data.width,
-      height: data.height,
-      format: data.format,
-      bytes: data.bytes,
+      url: publicImageUrl(getImagesBaseUrl(), key),
+      key,
+      format: detected.ext,
+      bytes: blob.size,
     });
   } catch (error: unknown) {
     return NextResponse.json(

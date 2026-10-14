@@ -313,7 +313,8 @@ export const ProgramDetailClient: React.FC<ProgramDetailClientProps> = ({
 
                 <ArticleInteractiveBar
                   title={`${show.title} | ${currentEpisodeTitle}`}
-                  className="!my-2 !py-2.5"
+                  itemType="episode"
+                  className="!my-2.5 !py-3"
                 />
               </div>
 

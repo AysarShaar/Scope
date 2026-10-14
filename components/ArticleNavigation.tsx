@@ -42,7 +42,7 @@ export const ArticleNavigation: React.FC<ArticleNavigationProps> = ({
         </h2>
 
         <div
-          className={`grid grid-cols-2 gap-3 lg:gap-3.5 ${
+          className={`grid grid-cols-2 gap-2.5 sm:gap-3 lg:gap-3.5 ${
             bento
               ? 'lg:grid-cols-4 lg:grid-rows-[repeat(3,minmax(150px,1fr))]'
               : 'lg:grid-cols-4'
@@ -55,8 +55,8 @@ export const ArticleNavigation: React.FC<ArticleNavigationProps> = ({
                 key={item.id}
                 href={`/news/${item.id}`}
                 prefetch={false}
-                className={`group relative block overflow-hidden rounded-[10px] bg-[#0d1624] text-white isolate ${
-                  big ? 'col-span-2 min-h-[380px] lg:row-span-3' : 'min-h-[200px]'
+                className={`group relative block overflow-hidden rounded-xl bg-[#0d1624] text-white isolate ${
+                  big ? 'col-span-2 min-h-[280px] sm:min-h-[380px] lg:row-span-3' : 'min-h-[190px] sm:min-h-[220px]'
                 }`}
               >
                 <div className="absolute inset-0 -z-20 transition-transform duration-700 ease-out group-hover:scale-105">
@@ -67,17 +67,17 @@ export const ArticleNavigation: React.FC<ArticleNavigationProps> = ({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[rgba(5,9,16,.92)] via-[rgba(5,9,16,.55)] via-45% to-[rgba(5,9,16,.05)]" />
+                <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[rgba(5,9,16,.96)] via-[rgba(5,9,16,.65)] via-55% to-[rgba(5,9,16,.08)]" />
 
-                <div className={`absolute inset-x-0 bottom-0 ${big ? 'p-5 sm:p-7' : 'p-4 sm:p-[18px]'}`}>
-                  <span className={`font-extrabold text-[#ffb4b4] ${big ? 'text-[13px]' : 'text-xs'}`}>
+                <div className={`absolute inset-x-0 bottom-0 ${big ? 'p-4 sm:p-6 lg:p-7' : 'p-2.5 sm:p-4'}`}>
+                  <span className={`font-extrabold text-[#ffb4b4] uppercase tracking-wider block ${big ? 'text-xs sm:text-[13px]' : 'text-[10px] sm:text-xs'}`}>
                     {item.category}
                   </span>
                   <h3
-                    className={`mt-1.5 font-extrabold ${
+                    className={`mt-1 sm:mt-1.5 font-extrabold text-white group-hover:text-[#ffdede] transition-colors ${
                       big
-                        ? 'text-2xl sm:text-3xl leading-[1.4] line-clamp-4'
-                        : 'text-sm sm:text-base leading-normal line-clamp-3'
+                        ? 'text-base sm:text-2xl lg:text-3xl leading-snug sm:leading-[1.4] line-clamp-3 sm:line-clamp-4'
+                        : 'text-xs sm:text-sm md:text-base leading-snug sm:leading-normal line-clamp-4'
                     }`}
                   >
                     {item.title}
@@ -85,7 +85,6 @@ export const ArticleNavigation: React.FC<ArticleNavigationProps> = ({
                   {big && (
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/80">
                       <span>{item.date}</span>
-                      {item.author?.name && <span>{item.author.name}</span>}
                     </div>
                   )}
                 </div>

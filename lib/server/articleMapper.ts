@@ -1,6 +1,5 @@
 import { articles } from '../../db/schema';
 import { ScopeArticle } from '../../data/scopeData';
-import { optimizeCloudinaryUrl } from '../cloudinary';
 
 type ArticleRow = typeof articles.$inferSelect;
 
@@ -33,10 +32,10 @@ export function rowToArticle(row: PartialArticleRow, includeContent = true): Sco
     createdAt: row.createdAt ? String(row.createdAt) : undefined,
     updatedAt: row.updatedAt ? String(row.updatedAt) : undefined,
     imageType: (row.imageType as ScopeArticle['imageType']) ?? undefined,
-    imageUrl: row.imageUrl ? optimizeCloudinaryUrl(row.imageUrl) : undefined,
+    imageUrl: row.imageUrl ?? undefined,
     caption: row.caption ?? undefined,
     author: row.authorName ? { name: row.authorName, role: row.authorRole || '' } : undefined,
-    authorAvatar: row.authorAvatar ? optimizeCloudinaryUrl(row.authorAvatar) : undefined,
+    authorAvatar: row.authorAvatar ?? undefined,
     editorId: row.editorId ?? undefined,
     content: includeContent ? parseStoredContent(row.content) : undefined,
     status: row.status ?? undefined,

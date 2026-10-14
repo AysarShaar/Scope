@@ -475,6 +475,7 @@ export default function AdminPage() {
         onRefresh={() => loadData()}
         isLoading={isLoading}
         articlesCount={articles.length}
+        specialCount={articles.filter(a => a.isSpecial).length}
         breakingCount={breaking.length}
         programsCount={programs.length}
         editorsCount={editors.length}
@@ -502,6 +503,18 @@ export default function AdminPage() {
           )}
           {section === 'articles' && (
             <ArticlesList
+              articles={articles}
+              isLoading={isLoading}
+              onCreateNew={() => setEditingArticle(null)}
+              onEdit={handleEditArticle}
+              onDelete={handleDeleteArticle}
+              onApprove={handleApproveArticle}
+              userRole={userRole}
+            />
+          )}
+          {section === 'special_articles' && (
+            <ArticlesList
+              isSpecialOnly={true}
               articles={articles}
               isLoading={isLoading}
               onCreateNew={() => setEditingArticle(null)}

@@ -1,8 +1,7 @@
 import { Metadata } from 'next';
 import Link from '../../../components/NavLink';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { Clock, ChevronLeft, ShieldCheck } from 'lucide-react';
+import { Clock, ChevronLeft } from 'lucide-react';
 import { ScopeVisual } from '../../../components/ScopeVisual';
 import { ArticleInteractiveBar } from '../../../components/ArticleInteractiveBar';
 import { ArticleHeader } from '../../../components/ArticleHeader';
@@ -13,9 +12,8 @@ import { contentToText } from '../../../lib/articleText';
 import { safeJsonLd } from '../../../lib/safeJsonLd';
 import { getServerArticleById, getServerArticles } from '../../../lib/server/articles';
 import { getServerBreaking } from '../../../lib/server/breaking';
-import { optimizeCloudinaryUrl } from '../../../lib/cloudinary';
 import { getSiteUrl } from '../../../lib/site';
-import { absoluteImageUrl, articleIsoDates, trimDescription, SITE_NAME } from '../../../lib/seo';
+import { absoluteImageUrl, articleIsoDates, trimDescription, SITE_NAME, getNewsArticleImageUrls } from '../../../lib/seo';
 
 export const revalidate = 120;
 
@@ -47,7 +45,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: article.title,
     description,
-    keywords: [article.category, 'SCOPE MEDIA', 'سكوب ميديا', 'ما وراء العناوين'],
+    keywords: [
+      article.category,
+      'SCOPE MEDIA',
+      'سكوب ميديا',
+      'ما وراء العناوين',
+      ...(article.subtitle ? [article.subtitle.slice(0, 40)] : []),
+    ],
     alternates: {
       canonical: articleUrl,
     },
@@ -65,8 +69,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'article',
       publishedTime: published,
       modifiedTime: modified,
-      authors: [article.author?.name || 'فريق تحرير SCOPE MEDIA'],
       section: article.category,
+      tags: [article.category, 'SCOPE MEDIA'],
       images: [
         {
           url: ogImageUrl,
@@ -106,9 +110,11 @@ export default async function ArticlePage({ params }: PageProps) {
   const siteUrl = getSiteUrl();
   const articleUrl = `${siteUrl}/news/${article.id}`;
 
-  const articleOgImage = absoluteImageUrl(siteUrl, article.imageUrl);
+  const articleImages = getNewsArticleImageUrls(siteUrl, article.imageUrl);
   const { published, modified } = articleIsoDates(article);
   const description = trimDescription(article.subtitle || article.caption || contentToText(article.content));
+  const articleWordCount = contentToText(article.content).split(/\s+/).filter(Boolean).length;
+  const publishYear = published ? new Date(published).getFullYear() : new Date().getFullYear();
 
   const jsonLdNewsArticle = {
     '@context': 'https://schema.org',
@@ -119,28 +125,50 @@ export default async function ArticlePage({ params }: PageProps) {
     },
     headline: article.title,
     description,
-    image: [articleOgImage],
+    image: articleImages,
     datePublished: published,
-    dateModified: modified,
+    dateModified: modified || published,
     url: articleUrl,
     author: {
-      '@type': 'Person',
-      name: article.author?.name || 'فريق تحرير SCOPE MEDIA',
-      jobTitle: article.author?.role || 'محرر صحفي',
+      '@type': 'NewsMediaOrganization',
+      '@id': `${siteUrl}/#organization`,
+      name: SITE_NAME,
+      url: siteUrl,
     },
     publisher: {
       '@type': 'NewsMediaOrganization',
-      name: 'SCOPE MEDIA | سكوب ميديا',
+      '@id': `${siteUrl}/#organization`,
+      name: SITE_NAME,
       url: siteUrl,
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/logo-512.png`,
+        width: 512,
+        height: 512,
       },
+      publishingPrinciples: `${siteUrl}/about`,
     },
     articleSection: article.category,
-    wordCount: contentToText(article.content).split(/\s+/).filter(Boolean).length,
+    keywords: [
+      article.category,
+      'سكوب ميديا',
+      'SCOPE MEDIA',
+      ...(article.subtitle ? [article.subtitle.slice(0, 40)] : []),
+    ].join(', '),
+    wordCount: articleWordCount > 0 ? articleWordCount : undefined,
     isAccessibleForFree: true,
     inLanguage: 'ar',
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['h1', '[data-speakable="summary"]'],
+    },
+    copyrightHolder: {
+      '@type': 'NewsMediaOrganization',
+      '@id': `${siteUrl}/#organization`,
+      name: SITE_NAME,
+      url: siteUrl,
+    },
+    copyrightYear: publishYear,
   };
 
   const jsonLdBreadcrumb = {
@@ -205,11 +233,6 @@ export default async function ArticlePage({ params }: PageProps) {
                 <span className="px-2.5 py-1 bg-[#A42424] text-white font-bold text-xs rounded-md shadow-2xs">
                   {article.category}
                 </span>
-                {article.isSpecial && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-md font-bold text-xs">
-                    <span>تغطية خاصة</span>
-                  </span>
-                )}
               </div>
 
               <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
@@ -218,12 +241,12 @@ export default async function ArticlePage({ params }: PageProps) {
               </div>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black text-slate-900 dark:text-white leading-[1.3] rtl:text-right ltr:text-left tracking-tight">
+            <h1 data-speakable="headline" className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black text-slate-900 dark:text-white leading-[1.3] rtl:text-right ltr:text-left tracking-tight">
               {article.title}
             </h1>
 
             {article.subtitle && (
-              <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium rtl:text-right ltr:text-left">
+              <p data-speakable="summary" className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium rtl:text-right ltr:text-left">
                 {article.subtitle}
               </p>
             )}
@@ -249,39 +272,7 @@ export default async function ArticlePage({ params }: PageProps) {
               )}
             </div>
 
-            {article.author && (
-              <div className="flex items-center justify-between gap-4 py-5 mt-4 border-t border-slate-200 dark:border-slate-800/80">
-                <div className="flex items-center gap-3">
-                  {article.authorAvatar ? (
-                    <Image
-                      src={optimizeCloudinaryUrl(article.authorAvatar)}
-                      alt={article.author.name}
-                      width={44}
-                      height={44}
-                      unoptimized
-                      className="w-11 h-11 rounded-full object-cover border border-slate-700 shadow-xs"
-                    />
-                  ) : (
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#0c1828] to-[#1e3a5f] border border-slate-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                      {article.author.name.slice(0, 1)}
-                    </div>
-                  )}
-                  <div>
-                    <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                      <span>بقلم: {article.author.name}</span>
-                      <span title="محرر صحفي معتمد"><ShieldCheck className="w-3.5 h-3.5 text-rose-500" /></span>
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {article.author.role}
-                    </div>
-                  </div>
-                </div>
-            </div>
-          )}
-
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-              <ArticleInteractiveBar articleId={article.id} title={article.title} />
-            </div>
+            <ArticleInteractiveBar articleId={article.id} title={article.title} />
           </article>
         </div>
 
@@ -326,7 +317,6 @@ export default async function ArticlePage({ params }: PageProps) {
                     )}
                     <div className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-[#566274] dark:text-[#98a5b7]">
                       <span>{rel.date}</span>
-                      <span>{rel.author?.name || 'محرر SCOPE'}</span>
                     </div>
                   </div>
                 </Link>

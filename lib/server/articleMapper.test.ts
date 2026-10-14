@@ -44,9 +44,9 @@ describe('rowToArticle', () => {
     expect(rowToArticle(row({ authorRole: 'محررة' })).author).toBeUndefined();
   });
 
-  it('optimizes Cloudinary image urls', () => {
-    const a = rowToArticle(row({ imageUrl: 'https://res.cloudinary.com/x/image/upload/v1/a.jpg' }));
-    expect(a.imageUrl).toContain('/image/upload/f_auto/');
+  it('preserves image urls directly', () => {
+    const a = rowToArticle(row({ imageUrl: 'https://example.com/images/a.jpg' }));
+    expect(a.imageUrl).toBe('https://example.com/images/a.jpg');
   });
 
   it('skips the body when includeContent is false', () => {

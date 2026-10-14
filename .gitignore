@@ -58,3 +58,21 @@ db/seed.sql
 *.db-shm
 *.db-wal
 cloudinary-migration/
+
+# AI agents and skills
+.agents/
+AGENTS.md
+skills-lock.json
+
+# Local run, dev runners & environment overrides
+.local/
+local/
+*.local
+local-run*
+lib/localD1Adapter*
+
+# Termux & Android environment
+.termux/
+termux*
+*.apk
+*.aab
