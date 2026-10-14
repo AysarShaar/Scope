@@ -1,735 +1,621 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import {
-  ShieldAlert,
-  ShieldCheck,
-  KeyRound,
-  Plus,
-  Trash2,
-  Database,
-  Cloud,
-  ArrowRight,
-  Radio,
-  FileText,
-  AlertCircle,
-  CheckCircle2,
-  RefreshCw,
-  LogOut,
-  ExternalLink,
-} from 'lucide-react';
-import { ScopeArticle, BreakingItem } from '../../data/scopeData';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from '../../components/NavLink';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { RefreshCw } from 'lucide-react';
+import { ScopeArticle, BreakingItem, ScopeShow } from '../../data/scopeData';
+import { extractYouTubeId } from '../../lib/youtube';
+import dynamic from 'next/dynamic';
+import AdminSidebar, { type AdminSection } from './components/AdminSidebar';
+import AdminHeader from './components/AdminHeader';
+import AdminToast from './components/AdminToast';
+import type { EditorItem } from './components/EditorsList';
+import { ScopeLogo } from '../../components/ScopeLogo';
+import { errorMessage } from '../../lib/errors';
+const Dashboard = dynamic(() => import('./components/Dashboard'), { ssr: false });
+const ArticlesList = dynamic(() => import('./components/ArticlesList'), { ssr: false });
+const ArticleEditor = dynamic(() => import('./components/ArticleEditor'), { ssr: false });
+const BreakingNews = dynamic(() => import('./components/BreakingNews'), { ssr: false });
+const EditorsList = dynamic(() => import('./components/EditorsList'), { ssr: false });
+const ProgramsManager = dynamic(() => import('./components/ProgramsManager'), { ssr: false });
+
+type Toast = { text: string; type: 'success' | 'error' | 'info' };
 
 export default function AdminPage() {
-  const [adminKey, setAdminKey] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [d1Status, setD1Status] = useState<{ connected: boolean; workerUrl?: string | null }>({
-    connected: false,
-  });
+  const { data: session, status: sessionStatus } = useSession();
+  const [isAuth, setIsAuth] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [authErr, setAuthErr] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [googleConfigured, setGoogleConfigured] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'editor_in_chief' | 'editor'>('editor');
+  const [editorId, setEditorId] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'articles' | 'breaking' | 'docs'>('articles');
+  const [section, setSection] = useState<AdminSection>('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [articles, setArticles] = useState<ScopeArticle[]>([]);
   const [breaking, setBreaking] = useState<BreakingItem[]>([]);
-  const [actionMessage, setActionMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [editors, setEditors] = useState<EditorItem[]>([]);
+  const [programs, setPrograms] = useState<ScopeShow[]>([]);
+  const [toast, setToast] = useState<Toast | null>(null);
 
-  // New Article Form State
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newSubtitle, setNewSubtitle] = useState('');
-  const [newCategory, setNewCategory] = useState('اخبار');
-  const [newCategorySlug, setNewCategorySlug] = useState<'news' | 'region' | 'world' | 'economy' | 'politics' | 'investigations'>('news');
-  const [newAuthorName, setNewAuthorName] = useState('فريق تحرير SCOPE MEDIA');
-  const [newAuthorRole, setNewAuthorRole] = useState('محرر استقصائي');
-  const [newContent, setNewContent] = useState('');
+  const [editingArticle, setEditingArticle] = useState<ScopeArticle | null | undefined>(undefined);
+  const [liveStreamInput, setLiveStreamInput] = useState('');
 
-  // New Breaking Form State
-  const [newBreakingTitle, setNewBreakingTitle] = useState('');
-  const [newBreakingSpecial, setNewBreakingSpecial] = useState(false);
-
-  // Fetch initial data
-  const loadData = React.useCallback(async () => {
-    try {
-      const [artRes, brkRes] = await Promise.all([
-        fetch('/api/articles'),
-        fetch('/api/breaking'),
-      ]);
-      const artData = await artRes.json();
-      const brkData = await brkRes.json();
-      if (artData.data) setArticles(artData.data);
-      if (brkData.data) setBreaking(brkData.data);
-    } catch {
-      // Ignore
-    }
+  const showToast = useCallback((text: string, type: Toast['type'] = 'success') => {
+    setToast({ text, type });
   }, []);
 
-  const verifyKey = React.useCallback(async (keyToVerify: string) => {
-    setLoading(true);
-    setAuthError('');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('scope_setting_live_stream_id');
+      if (saved) setLiveStreamInput(saved);
+    }
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(d => {
+        if (!d?.data) return;
+        const id = d.data.live_stream_id || '';
+        setLiveStreamInput(id);
+        if (typeof window !== 'undefined') {
+          if (id) localStorage.setItem('scope_setting_live_stream_id', id);
+          else localStorage.removeItem('scope_setting_live_stream_id');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveLiveStream = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const id = extractYouTubeId(liveStreamInput) || liveStreamInput.trim();
+    if (typeof window !== 'undefined') {
+      if (id) localStorage.setItem('scope_setting_live_stream_id', id);
+      else localStorage.removeItem('scope_setting_live_stream_id');
+    }
+    setLiveStreamInput(id);
+
     try {
-      const res = await fetch('/api/admin/verify', {
+      const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: keyToVerify }),
+        body: JSON.stringify({ live_stream_id: id }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('scope_admin_key', keyToVerify);
-        setD1Status({
-          connected: Boolean(data.d1Connected),
-          workerUrl: data.workerUrl,
-        });
-        loadData();
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        showToast(id ? 'تم حفظ رابط البث المباشر في قاعدة البيانات بنجاح ✓' : 'تمت إزالة البث، وسيظهر الشعار بدلاً منه ✓', 'success');
       } else {
-        setIsAuthenticated(false);
-        setAuthError(data.message || 'رمز المصادقة غير صحيح');
+        showToast(data.error || 'تم الحفظ محلياً فقط', 'error');
       }
-    } catch (err: any) {
-      setAuthError('تعذر التحقق من الخادم: ' + err.message);
-    } finally {
-      setLoading(false);
+    } catch {
+      showToast('تم الحفظ محلياً (حدث خطأ في الاتصال بالخادم)', 'info');
     }
-  }, [loadData]);
+  };
 
-  // Fetch initial data & verify session on mount
   useEffect(() => {
-    let active = true;
-
-    async function initialize() {
-      try {
-        const [artRes, brkRes] = await Promise.all([
-          fetch('/api/articles'),
-          fetch('/api/breaking'),
-        ]);
-        const artData = await artRes.json();
-        const brkData = await brkRes.json();
-        if (active) {
-          if (artData.data) setArticles(artData.data);
-          if (brkData.data) setBreaking(brkData.data);
-        }
-      } catch {
-        // Fallback
-      }
-
-      const savedKey = typeof window !== 'undefined' ? sessionStorage.getItem('scope_admin_key') : null;
-      if (savedKey && active) {
-        try {
-          const res = await fetch('/api/admin/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: savedKey }),
-          });
-          const data = await res.json();
-          if (active) {
-            if (res.ok && data.success) {
-              setIsAuthenticated(true);
-              setAdminKey(savedKey);
-              setD1Status({
-                connected: Boolean(data.d1Connected),
-                workerUrl: data.workerUrl,
-              });
-            } else {
-              setIsAuthenticated(false);
-            }
-          }
-        } catch {
-          // Ignore
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('error');
+      if (err) {
+        setIsLoading(false);
+        if (err === 'OAuthSignin' || err === 'Configuration') {
+          setAuthErr('خدمة المصادقة غير مهيأة بالشكل المطلوب. يرجى مراجعة إدارة النظام.');
+        } else if (err === 'AccessDenied') {
+          setAuthErr('حساب Google هذا غير مصرح له بالدخول. يرجى التواصل مع مدير النظام لإضافة بريدك الإلكتروني لفريق التحرير.');
+        } else if (err === 'OAuthCallback') {
+          setAuthErr('فشل استلام رد المصادقة من Google. تأكد من ضبط Authorized Redirect URIs في Google Cloud Console.');
+        } else {
+          setAuthErr(`خطأ في تسجيل الدخول بواسطة Google (${err})`);
         }
       }
     }
 
-    initialize();
-
-    return () => {
-      active = false;
-    };
+    fetch('/api/auth/status')
+      .then(res => res.json())
+      .then(data => {
+        setGoogleConfigured(Boolean(data?.googleConfigured));
+      })
+      .catch(() => {});
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!adminKey.trim()) return;
-    verifyKey(adminKey.trim());
-  };
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [artRes, brkRes, edRes, progRes] = await Promise.all([
+        fetch('/api/articles?limit=10&full=false&includePending=true'),
+        fetch('/api/breaking?limit=30'),
+        fetch('/api/editors'),
+        fetch('/api/programs')
+      ]);
+      if (artRes.ok) {
+        const j = await artRes.json().catch(() => null);
+        if (j?.success) setArticles(j.data);
+      }
+      if (brkRes.ok) {
+        const j = await brkRes.json().catch(() => null);
+        if (j?.success) setBreaking(j.data);
+      }
+      if (edRes.ok) {
+        const j = await edRes.json().catch(() => null);
+        if (j?.success) setEditors(j.data);
+      }
+      if (progRes.ok) {
+        const j = await progRes.json().catch(() => null);
+        if (j?.success) setPrograms(j.data);
+      }
+    } catch (e: unknown) {
+      showToast('خطأ في تحميل البيانات: ' + errorMessage(e), 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && session?.user) {
+      setIsAuth(true);
+      setUserRole(session.user.role || 'editor');
+      setEditorId(session.user.editorId || null);
+      setChecking(false);
+      loadData();
+    } else if (sessionStatus === 'unauthenticated') {
+      setIsAuth(false);
+      setChecking(false);
+    }
+  }, [session, sessionStatus, loadData]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('scope_admin_key');
-    setIsAuthenticated(false);
-    setAdminKey('');
+    setIsAuth(false);
+    setArticles([]);
+    setBreaking([]);
+    setUserRole('editor');
+    setEditorId(null);
+    signOut({ callbackUrl: '/admin' });
   };
 
-  // Add Article
-  const handleCreateArticle = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    setLoading(true);
+  // The list only carries a short version of each article (no body), so the full article is loaded
+  // before the editor opens. Otherwise the editor starts empty and saving replaces the body.
+  const handleEditArticle = async (article: ScopeArticle) => {
+    setIsLoading(true);
     try {
-      const paragraphs = newContent
-        .split('\n')
-        .map((p) => p.trim())
-        .filter((p) => p.length > 0);
-
-      const res = await fetch('/api/articles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Key': adminKey,
-        },
-        body: JSON.stringify({
-          title: newTitle,
-          subtitle: newSubtitle,
-          category: newCategory,
-          categorySlug: newCategorySlug,
-          categoryColor: 'red',
-          author: { name: newAuthorName, role: newAuthorRole },
-          content: paragraphs.length > 0 ? paragraphs : [newTitle],
-          imageType: 'anchor_studio',
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setActionMessage({ text: 'تم نشر المقال بنجاح في قاعدة البيانات', type: 'success' });
-        setShowAddModal(false);
-        setNewTitle('');
-        setNewSubtitle('');
-        setNewContent('');
-        loadData();
+      const res = await fetch(`/api/articles/${encodeURIComponent(article.id)}`, { cache: 'no-store' });
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.success && j.data) {
+        setEditingArticle(j.data as ScopeArticle);
       } else {
-        setActionMessage({ text: data.error || data.message || 'فشل نشر المقال', type: 'error' });
+        showToast(j?.error || 'تعذّر تحميل نص المقال، لم يُفتح التعديل حتى لا يضيع النص', 'error');
       }
-    } catch (err: any) {
-      setActionMessage({ text: err.message, type: 'error' });
+    } catch {
+      showToast('تعذّر تحميل نص المقال، لم يُفتح التعديل حتى لا يضيع النص', 'error');
     } finally {
-      setLoading(false);
-      setTimeout(() => setActionMessage(null), 4000);
+      setIsLoading(false);
     }
   };
 
-  // Delete Article
-  const handleDeleteArticle = async (id: string) => {
-    if (!confirm('هل أنت متأكد من رغبتك في حذف هذا المقال نهائياً من قاعدة البيانات؟')) return;
+  const handleSaveArticle = async (data: Partial<ScopeArticle>) => {
+    const isNew = editingArticle === null;
+    if (!isNew && editingArticle?.content === undefined) {
+      showToast('لم يُحمَّل نص المقال، أعد فتح التعديل. لم يُحفظ شيء.', 'error');
+      return;
+    }
+    const url = isNew ? '/api/articles' : `/api/articles/${editingArticle?.id}`;
+    const method = isNew ? 'POST' : 'PUT';
 
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j.success) {
+      showToast(isNew ? 'تم نشر المقال بنجاح ✓' : 'تم حفظ التعديلات ✓', 'success');
+      setEditingArticle(undefined);
+      loadData();
+    } else {
+      showToast(j.error || 'فشلت العملية', 'error');
+    }
+  };
+
+  const handleDeleteArticle = async (id: string, title: string) => {
+    if (!confirm(`حذف المقال نهائياً:\n"${title}"`)) return;
+    setIsLoading(true);
     try {
-      const res = await fetch(`/api/articles/${id}`, {
+      const res = await fetch(`/api/articles/${encodeURIComponent(id)}`, {
         method: 'DELETE',
-        headers: {
-          'X-Admin-Key': adminKey,
-        },
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setActionMessage({ text: 'تم حذف المقال بنجاح', type: 'success' });
-        loadData();
-      } else {
-        setActionMessage({ text: data.error || 'فشل حذف المقال', type: 'error' });
-      }
-    } catch (err: any) {
-      setActionMessage({ text: err.message, type: 'error' });
-    }
-    setTimeout(() => setActionMessage(null), 4000);
+      const j = await res.json().catch(() => ({}));
+      if (j.success) { setArticles(p => p.filter(a => a.id !== id)); showToast('تم الحذف بنجاح', 'success'); }
+      else showToast(j.error || 'فشل الحذف', 'error');
+    } finally { setIsLoading(false); }
   };
 
-  // Add Breaking News
-  const handleAddBreaking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBreakingTitle.trim()) return;
-
-    setLoading(true);
+  const handleApproveArticle = async (id: string, title: string) => {
+    setIsLoading(true);
     try {
-      const res = await fetch('/api/breaking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Key': adminKey,
-        },
-        body: JSON.stringify({
-          title: newBreakingTitle,
-          isSpecial: newBreakingSpecial,
-        }),
+      const res = await fetch(`/api/articles/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'published' }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setActionMessage({ text: 'تم بث الخبر العاجل في شريط الأخبار بنجاح', type: 'success' });
-        setNewBreakingTitle('');
-        setNewBreakingSpecial(false);
-        loadData();
+      const j = await res.json().catch(() => ({}));
+      if (j.success) {
+        setArticles(p => p.map(a => a.id === id ? { ...a, status: 'published' } : a));
+        showToast(`تم اعتماد ونشر المقال: "${title}" ✓`, 'success');
       } else {
-        setActionMessage({ text: data.error || 'فشل بث الخبر', type: 'error' });
+        showToast(j.error || 'فشل اعتماد المقال', 'error');
       }
-    } catch (err: any) {
-      setActionMessage({ text: err.message, type: 'error' });
     } finally {
-      setLoading(false);
-      setTimeout(() => setActionMessage(null), 4000);
+      setIsLoading(false);
     }
+  };
+
+  const handleAddBreaking = async (data: { title: string }) => {
+    const res = await fetch('/api/breaking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j.success) { showToast('تمت إضافة الخبر العاجل ✓', 'success'); loadData(); }
+    else showToast(j.error || 'فشلت الإضافة', 'error');
+  };
+
+  const handleDeleteBreaking = async (id: string) => {
+    const res = await fetch(`/api/breaking/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j.success || res.ok) { setBreaking(p => p.filter(b => b.id !== id)); showToast('تم حذف الخبر العاجل', 'success'); }
+    else showToast(j.error || 'فشل الحذف', 'error');
+  };
+
+  const handleAddEditor = async (data: { name: string; email?: string; role: string; avatarUrl?: string; systemRole: string }) => {
+    try {
+      const res = await fetch('/api/editors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.success) {
+        showToast('تم إضافة المحرر بنجاح ✓', 'success');
+        loadData();
+        return { success: true };
+      } else {
+        const errorMsg = j.error || 'فشلت الإضافة';
+        showToast(errorMsg, 'error');
+        return { success: false, error: errorMsg };
+      }
+    } catch (e: unknown) {
+      const errorMsg = errorMessage(e) || 'فشلت العملية';
+      showToast(errorMsg, 'error');
+      return { success: false, error: errorMsg };
+    }
+  };
+
+  const handleUpdateEditor = async (id: string, data: Partial<EditorItem>) => {
+    try {
+      const res = await fetch(`/api/editors/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.success) {
+        showToast('تم تحديث بيانات المحرر بنجاح ✓', 'success');
+        loadData();
+        return { success: true };
+      } else {
+        const errorMsg = j.error || 'فشل التحديث';
+        showToast(errorMsg, 'error');
+        return { success: false, error: errorMsg };
+      }
+    } catch (e: unknown) {
+      const errorMsg = errorMessage(e) || 'فشلت العملية';
+      showToast(errorMsg, 'error');
+      return { success: false, error: errorMsg };
+    }
+  };
+
+  const handleDeleteEditor = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذا المحرر؟')) return;
+    const res = await fetch(`/api/editors/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j.success || res.ok) { setEditors(p => p.filter(e => e.id !== id)); showToast('تم حذف المحرر', 'success'); }
+    else showToast(j.error || 'فشل الحذف', 'error');
+  };
+
+  const handleAddProgram = async (data: Partial<ScopeShow>) => {
+    const res = await fetch('/api/programs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j.success) { showToast('تمت إضافة البرنامج بنجاح ✓', 'success'); loadData(); }
+    else showToast(j.error || 'فشلت إضافة البرنامج', 'error');
+  };
+
+  const handleUpdateProgram = async (id: string, data: Partial<ScopeShow>) => {
+    const res = await fetch(`/api/programs/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j.success) { showToast('تم تحديث البرنامج والحلقات بنجاح ✓', 'success'); loadData(); }
+    else showToast(j.error || 'فشل تحديث البرنامج', 'error');
+  };
+
+  const handleDeleteProgram = async (id: string, title: string) => {
+    if (!confirm(`هل أنت متأكد من حذف البرنامج:\n"${title}"؟`)) return;
+    const res = await fetch(`/api/programs/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    const j = await res.json().catch(() => ({}));
+    if (j.success || res.ok) {
+      setPrograms(p => p.filter(pr => pr.id !== id));
+      showToast('تم حذف البرنامج بنجاح', 'success');
+    } else {
+      showToast(j.error || 'فشل حذف البرنامج', 'error');
+    }
+  };
+
+  if (checking) return (
+    <div className="min-h-screen bg-[#070c16] text-white flex flex-col items-center justify-center font-sans relative overflow-hidden" dir="rtl">
+      <div className="flex flex-col items-center gap-4 z-10">
+        <ScopeLogo variant="white" className="h-12 w-auto mb-1" />
+        <div className="flex items-center gap-2.5 text-xs text-slate-400 font-mono">
+          <RefreshCw className="w-4 h-4 animate-spin text-rose-500" />
+          <span>جاري التحقق من الجلسة والصلاحيات...</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!isAuth) return (
+    <div
+      className="min-h-screen bg-slate-50 dark:bg-[#070b14] text-slate-900 dark:text-slate-100 flex flex-col justify-center items-center p-4 font-sans select-none"
+      dir="rtl"
+    >
+      <div className="w-full max-w-xs space-y-6">
+        
+        <div className="text-center space-y-2">
+          <Link href="/" prefetch={false} className="inline-block">
+            <ScopeLogo className="h-12 w-auto mx-auto" />
+          </Link>
+          <h1 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            تسجيل الدخول
+          </h1>
+        </div>
+
+        <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-3">
+          
+          {authErr && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200/80 dark:border-red-900/50 text-xs text-red-600 dark:text-red-300">
+              {authErr}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              if (googleConfigured === false) {
+                setAuthErr('إعدادات Google OAuth غير مفعلة.');
+                return;
+              }
+              setIsLoading(true);
+              setAuthErr('');
+              signIn('google', { callbackUrl: '/admin', prompt: 'select_account' }, { prompt: 'select_account' });
+            }}
+            disabled={isLoading}
+            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 dark:bg-[#121624] dark:hover:bg-[#181e30] border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-center gap-2.5 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+            <span>المتابعة بواسطة Google</span>
+          </button>
+        </div>
+
+        <div className="text-center">
+          <Link
+            href="/"
+            prefetch={false}
+            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          >
+            ← العودة للموقع
+          </Link>
+        </div>
+
+      </div>
+    </div>
+  );
+
+  const currentEditor = editors.find(
+    e => (editorId && e.id === editorId) ||
+         (session?.user?.email && e.email?.toLowerCase() === session.user.email.toLowerCase())
+  );
+
+  const currentUser = {
+    name: currentEditor?.name || session?.user?.name || 'محرر المنصة',
+    avatarUrl: currentEditor?.avatarUrl || session?.user?.image || null,
+    role: userRole,
+    roleLabel:
+      userRole === 'admin'
+        ? 'مدير النظام'
+        : userRole === 'editor_in_chief'
+        ? 'رئيس التحرير'
+        : (currentEditor?.role || 'محرر'),
+    email: currentEditor?.email || session?.user?.email || null,
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0a0f1d] text-slate-900 dark:text-slate-100 font-sans flex flex-col">
-      {/* Top Admin Header */}
-      <header className="bg-[#0a1526] text-white border-b border-slate-800 sticky top-0 z-40">
-        <div className="max-w-[1480px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex flex-col items-center group cursor-pointer">
-              <span className="font-black text-xl tracking-tighter text-white uppercase leading-none">
-                SCOPE
-              </span>
-              <div className="flex items-center gap-1 w-full justify-center mt-0.5">
-                <span className="w-2 h-[1px] bg-[#dc2626]"></span>
-                <span className="text-[8px] font-black tracking-widest text-[#dc2626] uppercase">
-                  MEDIA
-                </span>
-                <span className="w-2 h-[1px] bg-[#dc2626]"></span>
-              </div>
-            </Link>
+    <div className="flex min-h-screen bg-slate-50 dark:bg-[#080b16] font-sans text-slate-900 dark:text-slate-100" dir="rtl">
+      <AdminSidebar
+        current={section}
+        onChange={setSection}
+        onLogout={handleLogout}
+        onRefresh={() => loadData()}
+        isLoading={isLoading}
+        articlesCount={articles.length}
+        breakingCount={breaking.length}
+        programsCount={programs.length}
+        editorsCount={editors.length}
+        userRole={userRole}
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        currentUser={currentUser}
+      />
 
-            <div className="h-6 w-[1px] bg-slate-700 mx-1"></div>
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        <AdminHeader
+          section={section}
+          user={currentUser}
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onRefresh={() => loadData()}
+          isLoading={isLoading}
+          onLogout={handleLogout}
+          onNavigate={setSection}
+        />
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>لوحة تحكم المسؤول (Cloudflare D1 Backend)</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Backend D1 Status Indicator */}
-            <div
-              className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border ${
-                d1Status.connected
-                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800'
-                  : 'bg-amber-950/60 text-amber-300 border-amber-800'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>{d1Status.connected ? 'متصل بقاعدة بيانات Cloudflare D1' : 'وضع المعاينة المحلي (Local D1 Mode)'}</span>
-            </div>
-
-            <Link
-              href="/"
-              className="text-xs text-slate-300 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 transition-colors"
-            >
-              <span>الموقع الرئيسي</span>
-              <ArrowRight className="w-3.5 h-3.5 mr-0.5" />
-            </Link>
-
-            {isAuthenticated && (
-              <button
-                onClick={handleLogout}
-                className="text-xs text-rose-300 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg border border-rose-900 bg-rose-950/40 hover:bg-rose-900 transition-colors cursor-pointer"
-                title="تسجيل الخروج"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">خروج</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="max-w-[1480px] w-full mx-auto px-4 sm:px-6 py-6 flex-1">
-        {/* Flash Notification */}
-        {actionMessage && (
-          <div
-            className={`mb-6 p-4 rounded-xl border flex items-center gap-3 text-sm animate-in fade-in duration-150 ${
-              actionMessage.type === 'success'
-                ? 'bg-emerald-950/40 text-emerald-200 border-emerald-800'
-                : 'bg-rose-950/40 text-rose-200 border-rose-800'
-            }`}
-          >
-            {actionMessage.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
-            )}
-            <span>{actionMessage.text}</span>
-          </div>
-        )}
-
-        {/* 1. AUTHENTICATION GATE (Restricts anyone except Admin) */}
-        {!isAuthenticated ? (
-          <div className="max-w-md mx-auto my-12 bg-white dark:bg-[#121b2d] p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg text-center">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#dc2626]/10 text-[#dc2626] flex items-center justify-center border border-[#dc2626]/20">
-              <KeyRound className="w-7 h-7" />
-            </div>
-
-            <h1 className="text-xl font-bold mb-2">منطقة الإدارة المحمية</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-              لحماية بيانات المنصة، تقتصر عمليات التعديل والإضافة والحذف في قاعدة بيانات D1 على المسؤولين المعتمدين فقط.
-            </p>
-
-            <form onSubmit={handleLogin} className="space-y-4 text-right">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 md:p-8">
+          <div className="max-w-6xl mx-auto space-y-6">
+          {section === 'dashboard' && (
+            <Dashboard articles={articles} breaking={breaking} onNavigate={s => setSection(s)} />
+          )}
+          {section === 'articles' && (
+            <ArticlesList
+              articles={articles}
+              isLoading={isLoading}
+              onCreateNew={() => setEditingArticle(null)}
+              onEdit={handleEditArticle}
+              onDelete={handleDeleteArticle}
+              onApprove={handleApproveArticle}
+              userRole={userRole}
+            />
+          )}
+          {section === 'breaking' && (
+            <BreakingNews
+              items={breaking}
+              isLoading={isLoading}
+              onAdd={handleAddBreaking}
+              onDelete={handleDeleteBreaking}
+            />
+          )}
+          {section === 'programs' && (
+            <ProgramsManager
+              programs={programs}
+              isLoading={isLoading}
+              onAddProgram={handleAddProgram}
+              onUpdateProgram={handleUpdateProgram}
+              onDeleteProgram={handleDeleteProgram}
+              userRole={userRole}
+            />
+          )}
+          {section === 'editors' && (
+            <EditorsList
+              editors={editors}
+              isLoading={isLoading}
+              onAdd={handleAddEditor}
+              onUpdate={handleUpdateEditor}
+              onDelete={handleDeleteEditor}
+            />
+          )}
+          {section === 'settings' && (
+            <div className="space-y-4 max-w-4xl">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  رمز المسؤول السري (Admin Secret Key)
-                </label>
-                <input
-                  type="password"
-                  placeholder="أدخل الرمز السري هنا..."
-                  value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
-                  className="w-full h-10 px-3.5 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-[#dc2626]"
-                  required
-                />
-              </div>
-
-              {authError && (
-                <div className="text-xs text-[#dc2626] flex items-center gap-1.5 font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{authError}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-10 bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-              >
-                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                <span>تسجيل الدخول كمسؤول</span>
-              </button>
-
-              <div className="pt-2 text-[11px] text-slate-400 text-center">
-                يتم التحقق من الرمز ومطابقته مباشرة عبر ترويسات مشفرة تمنع أي وصول غير مصرح به.
-              </div>
-            </form>
-          </div>
-        ) : (
-          /* 2. AUTHENTICATED ADMIN DASHBOARD */
-          <div className="space-y-6">
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-              <button
-                onClick={() => setActiveTab('articles')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  activeTab === 'articles'
-                    ? 'bg-[#dc2626] text-white shadow-sm'
-                    : 'bg-white dark:bg-[#121b2d] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                <span>إدارة المقالات والتحقيقات ({articles.length})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('breaking')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  activeTab === 'breaking'
-                    ? 'bg-[#dc2626] text-white shadow-sm'
-                    : 'bg-white dark:bg-[#121b2d] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-                }`}
-              >
-                <Radio className="w-4 h-4" />
-                <span>شريط الأخبار العاجلة ({breaking.length})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('docs')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  activeTab === 'docs'
-                    ? 'bg-[#dc2626] text-white shadow-sm'
-                    : 'bg-white dark:bg-[#121b2d] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-                }`}
-              >
-                <Cloud className="w-4 h-4" />
-                <span>دليل تشغيل Cloudflare D1</span>
-              </button>
-            </div>
-
-            {/* TAB 1: ARTICLES MANAGER */}
-            {activeTab === 'articles' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold">أرشيف المقالات والتقارير</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      يمكنك نشر مقال جديد، مراجعة المحتوى، أو حذف المقالات غير المرغوب فيها من D1.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>إضافة مقال جديد</span>
-                  </button>
-                </div>
-
-                {/* Articles Table */}
-                <div className="bg-white dark:bg-[#121b2d] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-right text-xs">
-                      <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
-                        <tr>
-                          <th className="py-3 px-4">عنوان المقال</th>
-                          <th className="py-3 px-4">القسم</th>
-                          <th className="py-3 px-4">الكاتب</th>
-                          <th className="py-3 px-4">التاريخ</th>
-                          <th className="py-3 px-4">التعليقات</th>
-                          <th className="py-3 px-4 text-center">الإجراءات</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                        {articles.map((art) => (
-                          <tr key={art.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                            <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100 max-w-md">
-                              <Link href={`/news/${art.id}`} target="_blank" className="hover:text-[#dc2626] flex items-center gap-1.5">
-                                <span className="line-clamp-1">{art.title}</span>
-                                <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
-                              </Link>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                {art.category}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
-                              {art.author?.name || 'فريق التحرير'}
-                            </td>
-                            <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono">
-                              {art.date}
-                            </td>
-                            <td className="py-3 px-4 font-mono">
-                              {art.commentsCount || 0}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <button
-                                onClick={() => handleDeleteArticle(art.id)}
-                                className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                                title="حذف المقال"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: BREAKING NEWS MANAGER */}
-            {activeTab === 'breaking' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-bold">بث الأخبار العاجلة</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    أضف خبراً عاجلاً ليظهر فوراً في شريط الأخبار المتحرك أعلى منصة SCOPE MEDIA.
-                  </p>
-                </div>
-
-                {/* Add Breaking Form */}
-                <form
-                  onSubmit={handleAddBreaking}
-                  className="bg-white dark:bg-[#121b2d] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
-                >
-                  <label className="block text-xs font-bold">نص الخبر العاجل:</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="اكتب الخبر العاجل هنا بشكل دقيق وموجز..."
-                      value={newBreakingTitle}
-                      onChange={(e) => setNewBreakingTitle(e.target.value)}
-                      className="flex-1 h-10 px-3.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-[#dc2626]"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-5 h-10 bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>بث الخبر الآن</span>
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="specialBreaking"
-                      checked={newBreakingSpecial}
-                      onChange={(e) => setNewBreakingSpecial(e.target.checked)}
-                      className="accent-[#dc2626] cursor-pointer"
-                    />
-                    <label htmlFor="specialBreaking" className="text-xs text-slate-500 cursor-pointer">
-                      تمييز كخبر حصري استثنائي (باللون الأحمر)
-                    </label>
-                  </div>
-                </form>
-
-                {/* Breaking List */}
-                <div className="bg-white dark:bg-[#121b2d] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-2">
-                  <h3 className="text-xs font-bold text-slate-400 pb-2 border-b border-slate-100 dark:border-slate-800">
-                    الأخبار العاجلة النشطة حالياً ({breaking.length})
-                  </h3>
-                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {breaking.map((item) => (
-                      <div key={item.id} className="py-2.5 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                            {item.time}
-                          </span>
-                          <span className={`text-xs ${item.isSpecial ? 'font-bold text-[#dc2626]' : 'text-slate-800 dark:text-slate-200'}`}>
-                            {item.title}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: D1 SETUP GUIDE */}
-            {activeTab === 'docs' && (
-              <div className="bg-white dark:bg-[#121b2d] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 text-xs leading-relaxed">
-                <div className="flex items-center gap-2 text-base font-bold text-[#dc2626]">
-                  <Cloud className="w-5 h-5" />
-                  <span>دليل ربط Cloudflare D1 مع SCOPE MEDIA</span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-300">
-                  تم إنشاء الكود المصدري الكامل للـ Worker وقاعدة البيانات في مجلد <code className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono">/cloudflare-worker</code> في مشروعك.
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  الإعدادات العامة
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  إعدادات البث وتكوين المنصة
                 </p>
-
-                <div className="bg-slate-900 text-slate-100 p-4 rounded-xl font-mono space-y-2 text-[11px] overflow-x-auto text-left" dir="ltr">
-                  <p className="text-slate-400"># 1. Create Cloudflare D1 Database</p>
-                  <p className="text-emerald-400">npx wrangler d1 create scope_media_db</p>
-                  <p className="text-slate-400 mt-2"># 2. Execute SQL Schema & Seed</p>
-                  <p className="text-emerald-400">npx wrangler d1 execute scope_media_db --file=./cloudflare-worker/schema.sql</p>
-                  <p className="text-emerald-400">npx wrangler d1 execute scope_media_db --file=./cloudflare-worker/seed.sql</p>
-                  <p className="text-slate-400 mt-2"># 3. Set your secret Admin key</p>
-                  <p className="text-emerald-400">npx wrangler secret put ADMIN_API_KEY</p>
-                  <p className="text-slate-400 mt-2"># 4. Deploy Cloudflare Worker</p>
-                  <p className="text-emerald-400">npx wrangler deploy</p>
-                </div>
-
-                <div className="p-3 bg-emerald-950/20 border border-emerald-800/40 rounded-xl text-emerald-300">
-                  <strong>ميزة الأمان:</strong> جميع عمليات القراءة (GET) مفتوحة للمستخدمين لتصفح الأخبار بسرعة فائقة عبر شبكة Cloudflare Edge، بينما يتم حظر جميع عمليات الإضافة والحذف والتعديل (POST, PUT, DELETE) تلقائياً لأي شخص لا يحمل الـ Admin Key السري.
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* MODAL: ADD NEW ARTICLE */}
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-[#121b2d] w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="font-bold text-base flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-[#dc2626]" />
-                  <span>إنشاء ونشر مقال جديد في D1</span>
-                </h3>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                >
-                  ✕
-                </button>
               </div>
 
-              <form onSubmit={handleCreateArticle} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold mb-1">عنوان المقال:</label>
+              <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">
+                    البث المباشر الرئيسي
+                  </span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    ID: {extractYouTubeId(liveStreamInput) || liveStreamInput || 'لا يوجد (يظهر الشعار)'}
+                  </span>
+                </div>
+
+                <form onSubmit={handleSaveLiveStream} className="flex gap-2">
                   <input
                     type="text"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="اكتب العنوان الرئيسي الجذاب..."
-                    className="w-full h-10 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-[#dc2626]"
-                    required
+                    value={liveStreamInput}
+                    onChange={e => setLiveStreamInput(e.target.value)}
+                    placeholder="رابط أو معرف بث YouTube (اتركه فارغاً لإظهار الشعار)"
+                    className="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-[#121624] border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-slate-400 dark:focus:border-slate-600"
+                    dir="ltr"
                   />
-                </div>
-
-                <div>
-                  <label className="block font-bold mb-1">العنوان الفرعي (موجز المقال):</label>
-                  <input
-                    type="text"
-                    value={newSubtitle}
-                    onChange={(e) => setNewSubtitle(e.target.value)}
-                    placeholder="موجز تفصيلي يستعرض ما وراء الخبر..."
-                    className="w-full h-10 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-[#dc2626]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold mb-1">القسم:</label>
-                    <select
-                      value={newCategorySlug}
-                      onChange={(e: any) => {
-                        setNewCategorySlug(e.target.value);
-                        const labels: any = {
-                          news: 'أخبار',
-                          region: 'إقليمي',
-                          world: 'دولي',
-                          economy: 'اقتصاد',
-                          politics: 'سياسة',
-                          investigations: 'تحقيقات',
-                        };
-                        setNewCategory(labels[e.target.value] || 'أخبار');
-                      }}
-                      className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-[#dc2626]"
-                    >
-                      <option value="news">أخبار</option>
-                      <option value="region">إقليمي</option>
-                      <option value="world">دولي</option>
-                      <option value="economy">اقتصاد</option>
-                      <option value="politics">سياسة</option>
-                      <option value="investigations">تحقيقات خاصة</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold mb-1">اسم الكاتب / المحرر:</label>
-                    <input
-                      type="text"
-                      value={newAuthorName}
-                      onChange={(e) => setNewAuthorName(e.target.value)}
-                      className="w-full h-10 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-[#dc2626]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold mb-1">محتوى المقال (كل سطر يمثل فقرة):</label>
-                  <textarea
-                    rows={6}
-                    value={newContent}
-                    onChange={(e) => setNewContent(e.target.value)}
-                    placeholder="اكتب نص التقرير أو التحقيق هنا..."
-                    className="w-full p-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-[#dc2626]"
-                    required
-                  ></textarea>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                  >
-                    إلغاء
-                  </button>
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="px-6 py-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                    className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 rounded-lg text-xs font-semibold transition-colors cursor-pointer shrink-0"
                   >
-                    {loading ? 'جارِ الحفظ...' : 'نشر المقال في D1'}
+                    حفظ التغييرات
                   </button>
+                </form>
+              </div>
+
+              <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 text-[11px]">اسم المنصة</span>
+                    <p className="font-semibold text-slate-900 dark:text-white mt-0.5">SCOPE MEDIA</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[11px]">قاعدة البيانات</span>
+                    <p className="font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">Cloudflare D1 (نشط)</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[11px]">المنطقة الزمنية</span>
+                    <p className="font-mono text-slate-700 dark:text-slate-300 mt-0.5">UTC+3 (مكة)</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[11px]">اللغة والاتجاه</span>
+                    <p className="font-semibold text-slate-700 dark:text-slate-300 mt-0.5">العربية (RTL)</p>
+                  </div>
                 </div>
-              </form>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
+      </div>
+
+      {editingArticle !== undefined && (
+        <ArticleEditor
+          article={editingArticle}
+          editors={editors}
+          onSave={handleSaveArticle}
+          onClose={() => setEditingArticle(undefined)}
+          isLoading={isLoading}
+          userRole={userRole}
+          currentEditorId={editorId}
+        />
+      )}
+
+      {toast && <AdminToast text={toast.text} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

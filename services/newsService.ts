@@ -1,241 +1,267 @@
-import {
-  ScopeArticle,
-  BreakingItem,
-  getAllArticles,
-  getArticleById,
-  scopeBreakingList,
-} from '../data/scopeData';
+import { ScopeArticle, ScopeShow, BreakingItem } from "../data/scopeData";
 
-const WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL || '';
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
+export interface PaginatedArticlesResult {
+  articles: ScopeArticle[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
 
-/**
- * Service to fetch and mutate news data.
- * Seamlessly interfaces with Cloudflare Worker + D1 Database.
- * Automatically falls back to high-fidelity seed data if Worker is not yet configured.
- */
+export interface HomeBootstrapData {
+  articles: ScopeArticle[];
+  /** Newest published article flagged is_special (tall hero box); null when none is flagged. */
+  special?: ScopeArticle | null;
+  programs: ScopeShow[];
+  breaking: BreakingItem[];
+  liveStreamId: string;
+}
+
+function resolveApiBase(): string {
+  if (typeof window === "undefined") {
+    return process.env.APP_URL?.replace(/\/$/, '') || "";
+  }
+  return "";
+}
+
+async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
+  const base = resolveApiBase();
+  const url = base && path.startsWith('/') ? `${base}${path}` : path;
+  return fetch(url, init);
+}
+
+async function fetchRead(path: string): Promise<Response> {
+  const res = await fetchApi(path);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  }
+  return res;
+}
+
+let inFlightBreakingPromise: Promise<BreakingItem[]> | null = null;
+let cachedBreakingData: BreakingItem[] | null = null;
+let breakingCacheTimestamp = 0;
+const BREAKING_CACHE_TTL_MS = 30000;
+
+let homeBootstrapPromise: Promise<HomeBootstrapData | null> | null = null;
+let homeBootstrapTimestamp = 0;
+const HOME_BOOTSTRAP_TTL_MS = 30000;
+
+const inFlightArticleRequests = new Map<string, Promise<PaginatedArticlesResult>>();
+
 export const newsService = {
-  // Check if real Cloudflare D1 backend is connected
   isD1Configured(): boolean {
-    return Boolean(WORKER_URL && WORKER_URL.startsWith('http'));
+    return true;
   },
 
-  getWorkerUrl(): string {
-    return WORKER_URL;
-  },
+  async getArticlesPaginated(
+    options: {
+      category?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+      full?: boolean;
+      from?: string;
+      to?: string;
+      date?: string;
+      status?: string;
+      author?: string;
+      sort?: 'desc' | 'asc';
+      includePending?: boolean;
+    } = {},
+  ): Promise<PaginatedArticlesResult> {
+    const page = Math.max(1, options.page || 1);
+    const limit = Math.min(1000, Math.max(1, options.limit || 12));
 
-  // 1. Fetch All Articles
-  async getArticles(category?: string, search?: string, limit = 50): Promise<ScopeArticle[]> {
-    if (this.isD1Configured()) {
+    const params = new URLSearchParams();
+    if (
+      options.category &&
+      options.category !== "home" &&
+      options.category !== "all"
+    ) {
+      params.set("category", options.category);
+    }
+    if (options.search) params.set("search", options.search);
+    if (options.from) params.set("from", options.from);
+    if (options.to) params.set("to", options.to);
+    if (options.date) params.set("date", options.date);
+    if (options.status) params.set("status", options.status);
+    if (options.author) params.set("author", options.author);
+    if (options.sort) params.set("sort", options.sort);
+    if (options.includePending) params.set("includePending", "true");
+    params.set("page", page.toString());
+    params.set("limit", limit.toString());
+    if (options.full) params.set("full", "true");
+
+    const cacheKey = params.toString();
+    const existingPromise = inFlightArticleRequests.get(cacheKey);
+    if (existingPromise) {
+      return existingPromise;
+    }
+
+    const fetchPromise = (async (): Promise<PaginatedArticlesResult> => {
       try {
-        const url = new URL(`${WORKER_URL}/api/articles`);
-        if (category && category !== 'home' && category !== 'all') {
-          url.searchParams.set('category', category);
-        }
-        if (search) {
-          url.searchParams.set('search', search);
-        }
-        url.searchParams.set('limit', limit.toString());
-
-        const res = await fetch(url.toString(), {
-          next: { revalidate: 30 }, // Next.js ISR edge caching
-        });
-
+        const res = await fetchRead(`/api/articles?${cacheKey}`);
         if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            return json.data;
+          const json = await res.json().catch(() => null);
+          if (json?.success && Array.isArray(json.data)) {
+            const pagination = json.pagination || {};
+            return {
+              articles: json.data,
+              total: pagination.total ?? json.data.length,
+              page: pagination.page || page,
+              limit: pagination.limit || limit,
+              totalPages:
+                pagination.totalPages ||
+                Math.max(
+                  1,
+                  Math.ceil((pagination.total || json.data.length) / limit),
+                ),
+              hasMore: pagination.hasMore ?? page < (pagination.totalPages || 1),
+            };
           }
         }
       } catch (err) {
-        console.warn('Could not fetch from Cloudflare D1 Worker, falling back to local dataset:', err);
+        console.error("[newsService] getArticlesPaginated error:", err);
       }
-    }
 
-    // Fallback to local high-fidelity dataset
-    let list = getAllArticles();
-    if (category && category !== 'home' && category !== 'all') {
-      list = list.filter((a) => a.categorySlug === category);
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (a) =>
-          a.title.toLowerCase().includes(q) ||
-          a.subtitle?.toLowerCase().includes(q) ||
-          a.caption?.toLowerCase().includes(q)
-      );
-    }
-    return list.slice(0, limit);
+      return {
+        articles: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 1,
+        hasMore: false,
+      };
+    })().finally(() => {
+      inFlightArticleRequests.delete(cacheKey);
+    });
+
+    inFlightArticleRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
   },
 
-  // 2. Fetch Single Article
+  async getArticles(
+    category?: string,
+    search?: string,
+    limit = 50,
+    page = 1,
+    full = false,
+  ): Promise<ScopeArticle[]> {
+    const result = await this.getArticlesPaginated({
+      category,
+      search,
+      limit,
+      page,
+      full,
+    });
+    return result.articles;
+  },
+
   async getArticleById(id: string): Promise<ScopeArticle | null> {
-    if (this.isD1Configured()) {
-      try {
-        const res = await fetch(`${WORKER_URL}/api/articles/${id}`, {
-          next: { revalidate: 30 },
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data) {
-            return json.data;
-          }
-        }
-      } catch (err) {
-        console.warn(`Could not fetch article ${id} from Cloudflare D1:`, err);
+    try {
+      const res = await fetchRead(`/api/articles/${id}`);
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json?.success && json.data) return json.data;
       }
+    } catch (err) {
+      console.error(`[newsService] getArticleById(${id}) error:`, err);
     }
-
-    const localArticle = getArticleById(id);
-    return localArticle || null;
+    return null;
   },
 
-  // 3. Fetch Breaking News
+  /**
+   * One request that returns everything the home page needs (articles, programs, ticker, live id).
+   * The promise is shared, so the header and hero components can wait on it instead of firing their own
+   * requests. Resolves to null on failure, in which case callers fall back to their individual endpoints.
+   */
+  getHomeBootstrap(): Promise<HomeBootstrapData | null> {
+    const now = Date.now();
+    if (homeBootstrapPromise && now - homeBootstrapTimestamp < HOME_BOOTSTRAP_TTL_MS) {
+      return homeBootstrapPromise;
+    }
+    homeBootstrapTimestamp = now;
+    const promise: Promise<HomeBootstrapData | null> = (async () => {
+      try {
+        const res = await fetchRead("/api/home");
+        const json = await res.json().catch(() => null);
+        const data = json?.success ? (json.data as Partial<HomeBootstrapData> | undefined) : undefined;
+        if (data && Array.isArray(data.articles)) {
+          const result: HomeBootstrapData = {
+            articles: data.articles,
+            programs: Array.isArray(data.programs) ? data.programs : [],
+            breaking: Array.isArray(data.breaking) ? data.breaking.slice(0, 12) : [],
+            liveStreamId: typeof data.liveStreamId === "string" ? data.liveStreamId : "",
+          };
+          cachedBreakingData = result.breaking;
+          breakingCacheTimestamp = Date.now();
+          return result;
+        }
+      } catch (err) {
+        console.error("[newsService] getHomeBootstrap error:", err);
+      }
+      return null;
+    })();
+    homeBootstrapPromise = promise;
+    promise.then((r) => {
+      if (!r && homeBootstrapPromise === promise) homeBootstrapPromise = null;
+    });
+    return promise;
+  },
+
+  /** Seeds the shared home bootstrap with data the server already rendered, so no extra request is made. */
+  seedHomeBootstrap(data: HomeBootstrapData): void {
+    homeBootstrapPromise = Promise.resolve(data);
+    homeBootstrapTimestamp = Date.now();
+    cachedBreakingData = data.breaking;
+    breakingCacheTimestamp = Date.now();
+  },
+
+  /** The shared home bootstrap request if one is running or still fresh, otherwise null. */
+  peekHomeBootstrap(): Promise<HomeBootstrapData | null> | null {
+    if (homeBootstrapPromise && Date.now() - homeBootstrapTimestamp < HOME_BOOTSTRAP_TTL_MS) {
+      return homeBootstrapPromise;
+    }
+    return null;
+  },
+
   async getBreakingNews(): Promise<BreakingItem[]> {
-    if (this.isD1Configured()) {
+    const pending = this.peekHomeBootstrap();
+    if (pending) {
+      const boot = await pending;
+      if (boot && boot.breaking.length > 0) return boot.breaking;
+    }
+
+    const now = Date.now();
+    if (cachedBreakingData && now - breakingCacheTimestamp < BREAKING_CACHE_TTL_MS) {
+      return cachedBreakingData;
+    }
+    if (inFlightBreakingPromise) {
+      return inFlightBreakingPromise;
+    }
+
+    inFlightBreakingPromise = (async () => {
       try {
-        const res = await fetch(`${WORKER_URL}/api/breaking`, {
-          next: { revalidate: 15 },
-        });
+        const res = await fetchRead("/api/breaking?limit=12");
         if (res.ok) {
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            return json.data;
+          const json = await res.json().catch(() => null);
+          if (json?.success && Array.isArray(json.data)) {
+            const items = json.data.slice(0, 12);
+            cachedBreakingData = items;
+            breakingCacheTimestamp = Date.now();
+            return items;
           }
         }
       } catch (err) {
-        console.warn('Could not fetch breaking news from Cloudflare D1:', err);
+        console.error("[newsService] getBreakingNews error:", err);
       }
-    }
+      return cachedBreakingData || [];
+    })().finally(() => {
+      inFlightBreakingPromise = null;
+    });
 
-    return scopeBreakingList;
-  },
-
-  // 4. Verify Admin Key
-  async verifyAdminKey(key: string): Promise<{ success: boolean; message: string }> {
-    // Check against local server env key first
-    if (ADMIN_API_KEY && key === ADMIN_API_KEY) {
-      return { success: true, message: 'مصرح كمسؤول في SCOPE MEDIA' };
-    }
-
-    // Also verify against Cloudflare Worker D1 endpoint if configured
-    if (this.isD1Configured()) {
-      try {
-        const res = await fetch(`${WORKER_URL}/api/admin/verify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Key': key,
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          return { success: true, message: data.message || 'مصرح كمسؤول' };
-        }
-      } catch {
-        // Fallback
-      }
-    }
-
-    // Default test key if no custom key configured in development
-    if (key === 'scope_admin_2026' || (key && key === ADMIN_API_KEY)) {
-      return { success: true, message: 'مصرح كمسؤول في SCOPE MEDIA' };
-    }
-
-    return { success: false, message: 'رمز المصادقة غير صحيح أو غير مصرح لك بالتعديل' };
-  },
-
-  // 5. Admin Mutation: Create Article
-  async createArticle(
-    article: Partial<ScopeArticle>,
-    adminKey: string
-  ): Promise<{ success: boolean; message: string; id?: string }> {
-    const authCheck = await this.verifyAdminKey(adminKey);
-    if (!authCheck.success) {
-      return { success: false, message: 'غير مصرح: صلاحيات المسؤول مطلوبة للتعديل' };
-    }
-
-    if (this.isD1Configured()) {
-      try {
-        const res = await fetch(`${WORKER_URL}/api/articles`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Key': adminKey,
-          },
-          body: JSON.stringify(article),
-        });
-        const data = await res.json();
-        return data;
-      } catch (err: any) {
-        return { success: false, message: `فشل الاتصال بـ Cloudflare D1: ${err.message}` };
-      }
-    }
-
-    return {
-      success: true,
-      message: 'تم حفظ المقال بنجاح (وضع المعاينة المحلي - قم بضبط CLOUDFLARE_WORKER_URL للحفظ الدائم في D1)',
-      id: article.id || `art-${Date.now()}`,
-    };
-  },
-
-  // 6. Admin Mutation: Delete Article
-  async deleteArticle(id: string, adminKey: string): Promise<{ success: boolean; message: string }> {
-    const authCheck = await this.verifyAdminKey(adminKey);
-    if (!authCheck.success) {
-      return { success: false, message: 'غير مصرح: صلاحيات المسؤول مطلوبة للحذف' };
-    }
-
-    if (this.isD1Configured()) {
-      try {
-        const res = await fetch(`${WORKER_URL}/api/articles/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'X-Admin-Key': adminKey,
-          },
-        });
-        const data = await res.json();
-        return data;
-      } catch (err: any) {
-        return { success: false, message: `فشل الحذف من D1: ${err.message}` };
-      }
-    }
-
-    return { success: true, message: 'تم حذف المقال بنجاح' };
-  },
-
-  // 7. Admin Mutation: Add Breaking News
-  async addBreakingNews(
-    item: { time?: string; title: string; isSpecial?: boolean },
-    adminKey: string
-  ): Promise<{ success: boolean; message: string; data?: any }> {
-    const authCheck = await this.verifyAdminKey(adminKey);
-    if (!authCheck.success) {
-      return { success: false, message: 'غير مصرح: صلاحيات المسؤول مطلوبة لنشر الأخبار العاجلة' };
-    }
-
-    if (this.isD1Configured()) {
-      try {
-        const res = await fetch(`${WORKER_URL}/api/breaking`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Key': adminKey,
-          },
-          body: JSON.stringify(item),
-        });
-        const data = await res.json();
-        return data;
-      } catch (err: any) {
-        return { success: false, message: `فشل نشر الخبر في D1: ${err.message}` };
-      }
-    }
-
-    return {
-      success: true,
-      message: 'تم نشر الخبر العاجل بنجاح',
-      data: { id: `b-${Date.now()}`, ...item },
-    };
+    return inFlightBreakingPromise;
   },
 };

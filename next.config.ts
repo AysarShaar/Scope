@@ -1,93 +1,84 @@
-import type {NextConfig} from 'next';
-import fs from 'node:fs';
-import path from 'node:path';
+import type { NextConfig } from 'next';
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 
-function ensureManifestsInDir(dirName: string) {
-  try {
-    const nextDir = path.join(process.cwd(), dirName);
-    if (!fs.existsSync(nextDir)) {
-      fs.mkdirSync(nextDir, { recursive: true });
-    }
+// 'unsafe-eval' is only needed by React's dev tooling (stack reconstruction), never in production.
+// 'unsafe-inline' stays for now: app/layout.tsx has inline bootstrap scripts and the article pages
+// emit JSON-LD. Removing it properly means switching to per-request nonces.
+const SCRIPT_SRC = [
+  "'self'",
+  "'unsafe-inline'",
+  ...(process.env.NODE_ENV === 'production' ? [] : ["'unsafe-eval'"]),
+  'https://apis.google.com',
+  'https://accounts.google.com',
+].join(' ');
 
-    const routesManifest = path.join(nextDir, 'routes-manifest.json');
-    if (!fs.existsSync(routesManifest)) {
-      const defaultRoutesManifest = {
-        version: 3,
-        caseSensitive: false,
-        basePath: '',
-        rewrites: { beforeFiles: [], afterFiles: [], fallback: [] },
-        redirects: [
-          {
-            source: '/:path+/',
-            destination: '/:path+',
-            permanent: true,
-            internal: true,
-            regex: '^(?:\\/((?:[^\\/]+?)(?:\\/(?:[^\\/]+?))*))\\/$',
-          },
-        ],
-        headers: [],
-      };
-      fs.writeFileSync(routesManifest, JSON.stringify(defaultRoutesManifest, null, 2));
-    }
-
-    const serverDir = path.join(nextDir, 'server');
-    if (!fs.existsSync(serverDir)) {
-      fs.mkdirSync(serverDir, { recursive: true });
-    }
-
-    const appPathsManifest = path.join(serverDir, 'app-paths-manifest.json');
-    if (!fs.existsSync(appPathsManifest)) {
-      fs.writeFileSync(appPathsManifest, JSON.stringify({ '/page': 'app/page.js' }, null, 2));
-    }
-  } catch {
-    // Non-blocking
-  }
-}
-
-function ensureManifests() {
-  ensureManifestsInDir('.next');
-  ensureManifestsInDir('.next_dev');
-}
-
-ensureManifests();
-
-const isProduction = process.env.NODE_ENV === 'production';
+const CSP_HEADER = [
+  "default-src 'self'",
+  `script-src ${SCRIPT_SRC}`,
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "connect-src 'self' https:",
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://accounts.google.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://accounts.google.com",
+].join('; ');
 
 const nextConfig: NextConfig = {
-  distDir: isProduction ? '.next' : '.next_dev',
-  output: 'standalone',
+  allowedDevOrigins: [
+    '192.168.*.*',
+    '10.*.*.*',
+    '172.*.*.*',
+    '*.*.*.*',
+    '*.local',
+  ],
   reactStrictMode: true,
   devIndicators: false,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Allow access to remote image placeholder and Unsplash editorial photography.
+  turbopack: {},
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
+        hostname: '**',
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: CSP_HEADER,
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ];
+  },
   transpilePackages: ['motion'],
-  webpack: (config, {dev}) => {
-    if (dev) {
-      ensureManifests();
-    }
-    // HMR is disabled in AI Studio via DISABLE_HMR env var.
-    // Do not modify—file watching is disabled to prevent flickering during agent edits.
+  webpack: (config, { dev }) => {
     if (dev && process.env.DISABLE_HMR === 'true') {
       config.watchOptions = {
         ignored: /.*/,
@@ -95,7 +86,7 @@ const nextConfig: NextConfig = {
     } else if (dev) {
       config.watchOptions = {
         ...config.watchOptions,
-        ignored: ['**/.next/**', '**/.next_dev/**', '**/node_modules/**'],
+        ignored: ['**/.next/**', '**/node_modules/**'],
       };
     }
     return config;
@@ -103,3 +94,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+initOpenNextCloudflareForDev();

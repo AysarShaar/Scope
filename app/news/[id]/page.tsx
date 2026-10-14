@@ -1,92 +1,115 @@
 import { Metadata } from 'next';
-import Link from 'next/link';
+import Link from '../../../components/NavLink';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowRight, Clock, ChevronLeft } from 'lucide-react';
-import {
-  getArticleById,
-  getRelatedArticles,
-  getAllArticles,
-  ScopeArticle,
-} from '../../../data/scopeData';
+import { Clock, ChevronLeft, ShieldCheck } from 'lucide-react';
 import { ScopeVisual } from '../../../components/ScopeVisual';
 import { ArticleInteractiveBar } from '../../../components/ArticleInteractiveBar';
-import { ArticleComments } from '../../../components/ArticleComments';
+import { ArticleHeader } from '../../../components/ArticleHeader';
+import { ArticleNavigation } from '../../../components/ArticleNavigation';
+import { ScopeFooter } from '../../../components/ScopeFooter';
+import { ArticleBody } from '../../../components/ArticleBody';
+import { contentToText } from '../../../lib/articleText';
+import { safeJsonLd } from '../../../lib/safeJsonLd';
+import { getServerArticleById, getServerArticles } from '../../../lib/server/articles';
+import { getServerBreaking } from '../../../lib/server/breaking';
+import { optimizeCloudinaryUrl } from '../../../lib/cloudinary';
+import { getSiteUrl } from '../../../lib/site';
+import { absoluteImageUrl, articleIsoDates, trimDescription, SITE_NAME } from '../../../lib/seo';
+
+export const revalidate = 120;
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Generate static params for optimal pre-rendering and instant SEO indexing
-export async function generateStaticParams() {
-  const articles = getAllArticles();
-  return articles.map((article) => ({
-    id: article.id,
-  }));
-}
-
-// Dynamic OpenGraph, Twitter, and SEO Metadata Generation
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const article = getArticleById(id);
+  const article = await getServerArticleById(id);
 
   if (!article) {
     return {
-      title: 'المقال غير موجود | SCOPE MEDIA',
+      title: 'المقال غير موجود',
       description: 'الصفحة المطلوبة غير متوفرة في أرشيف SCOPE MEDIA.',
+      robots: { index: false, follow: false },
     };
   }
 
-  const siteUrl = process.env.APP_URL || 'https://scope-media.pages.dev';
+  const siteUrl = getSiteUrl();
   const articleUrl = `${siteUrl}/news/${article.id}`;
-  const description = article.subtitle || article.caption || 'تغطية استقصائية خاصة عبر شبكة SCOPE MEDIA';
+  const bodyText = contentToText(article.content);
+  const description = trimDescription(
+    article.subtitle || article.caption || bodyText || 'تغطية استقصائية خاصة عبر شبكة SCOPE MEDIA',
+  );
+  const ogImageUrl = absoluteImageUrl(siteUrl, article.imageUrl);
+  const { published, modified } = articleIsoDates(article);
 
   return {
-    title: `${article.title} | SCOPE MEDIA`,
+    title: article.title,
     description,
-    keywords: [
-      article.category,
-      'أخبار الشرق الأوسط',
-      'تحليلات سياسية',
-      'اقتصاد',
-      'SCOPE MEDIA',
-      'سكوب ميديا',
-      'ما وراء العناوين',
-    ],
+    keywords: [article.category, 'SCOPE MEDIA', 'سكوب ميديا', 'ما وراء العناوين'],
     alternates: {
       canonical: articleUrl,
     },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+    },
     openGraph: {
-      title: `${article.title} | SCOPE MEDIA`,
+      title: article.title,
       description,
       url: articleUrl,
-      siteName: 'SCOPE MEDIA | سكوب ميديا',
+      siteName: SITE_NAME,
       locale: 'ar_AR',
       type: 'article',
-      publishedTime: article.date,
+      publishedTime: published,
+      modifiedTime: modified,
       authors: [article.author?.name || 'فريق تحرير SCOPE MEDIA'],
       section: article.category,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${article.title} | SCOPE MEDIA`,
+      title: article.title,
       description,
+      images: [ogImageUrl],
     },
   };
 }
 
 export default async function ArticlePage({ params }: PageProps) {
   const { id } = await params;
-  const article = getArticleById(id);
+  const article = await getServerArticleById(id);
 
   if (!article) {
     notFound();
   }
 
-  const relatedArticles = getRelatedArticles(article.id, article.categorySlug, 3);
-  const siteUrl = process.env.APP_URL || 'https://scope-media.pages.dev';
+  const [allArticles, categoryArticles, breakingNews] = await Promise.all([
+    getServerArticles(undefined, 10),
+    getServerArticles(article.categorySlug, 5),
+    getServerBreaking(12),
+  ]);
+
+  const navArticles = allArticles.filter((a) => a.id !== article.id).slice(0, 7);
+  const directRelated = (categoryArticles || []).filter((a) => a.id !== article.id);
+  const fallbackRelated = (allArticles || []).filter((a) => a.id !== article.id && !directRelated.some((r) => r.id === a.id));
+  const relatedArticles = [...directRelated, ...fallbackRelated].slice(0, 3);
+  const siteUrl = getSiteUrl();
   const articleUrl = `${siteUrl}/news/${article.id}`;
 
-  // Structured Data Schema.org (JSON-LD) for Google News and Rich Snippets
+  const articleOgImage = absoluteImageUrl(siteUrl, article.imageUrl);
+  const { published, modified } = articleIsoDates(article);
+  const description = trimDescription(article.subtitle || article.caption || contentToText(article.content));
+
   const jsonLdNewsArticle = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -95,9 +118,11 @@ export default async function ArticlePage({ params }: PageProps) {
       '@id': articleUrl,
     },
     headline: article.title,
-    description: article.subtitle || article.caption,
-    datePublished: article.date,
-    dateModified: article.date,
+    description,
+    image: [articleOgImage],
+    datePublished: published,
+    dateModified: modified,
+    url: articleUrl,
     author: {
       '@type': 'Person',
       name: article.author?.name || 'فريق تحرير SCOPE MEDIA',
@@ -105,14 +130,16 @@ export default async function ArticlePage({ params }: PageProps) {
     },
     publisher: {
       '@type': 'NewsMediaOrganization',
-      name: 'SCOPE MEDIA',
+      name: 'SCOPE MEDIA | سكوب ميديا',
       url: siteUrl,
       logo: {
         '@type': 'ImageObject',
-        url: `${siteUrl}/logo.png`,
+        url: `${siteUrl}/logo-512.png`,
       },
     },
     articleSection: article.category,
+    wordCount: contentToText(article.content).split(/\s+/).filter(Boolean).length,
+    isAccessibleForFree: true,
     inLanguage: 'ar',
   };
 
@@ -130,7 +157,7 @@ export default async function ArticlePage({ params }: PageProps) {
         '@type': 'ListItem',
         position: 2,
         name: article.category,
-        item: `${siteUrl}/?category=${article.categorySlug}`,
+        item: `${siteUrl}/category/${article.categorySlug}`,
       },
       {
         '@type': 'ListItem',
@@ -142,186 +169,174 @@ export default async function ArticlePage({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0a0f1d] text-slate-900 dark:text-slate-100 font-sans flex flex-col transition-colors duration-200">
-      {/* Schema.org Structured Data */}
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#080e1a] text-slate-900 dark:text-slate-100 font-sans flex flex-col transition-colors duration-200">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdNewsArticle) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLdNewsArticle) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLdBreadcrumb) }}
       />
 
-      {/* Top Navigation Bar */}
-      <header className="w-full bg-[#0a1526] text-white border-b border-slate-800 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-[1480px] mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-center">
-          {/* SCOPE MEDIA Brand Wordmark Centered */}
-          <Link href="/" className="flex flex-col items-center group cursor-pointer">
-            <span className="font-black text-2xl sm:text-3xl tracking-tighter text-white font-sans uppercase leading-none">
-              SCOPE
-            </span>
-            <div className="flex items-center gap-1 w-full justify-center mt-0.5">
-              <span className="w-2.5 h-[1.5px] bg-[#dc2626]"></span>
-              <span className="text-[9px] sm:text-[10px] font-black tracking-widest text-[#dc2626] uppercase leading-none">
-                MEDIA
-              </span>
-              <span className="w-2.5 h-[1.5px] bg-[#dc2626]"></span>
-            </div>
-          </Link>
-        </div>
-      </header>
+      <ArticleHeader currentCategorySlug={article.categorySlug} breakingNews={breakingNews} />
 
-      {/* Breadcrumb Navigation for SEO & UX */}
-      <nav aria-label="مسار التصفح" className="w-full bg-white/80 dark:bg-[#121b2d]/80 border-b border-slate-200 dark:border-slate-800/80 py-2.5 backdrop-blur-xs">
-        <div className="max-w-[1480px] mx-auto px-4 sm:px-6 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-          <Link href="/" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+      <nav aria-label="مسار التصفح" className="w-full bg-white/90 dark:bg-[#0c1628]/90 border-b border-slate-200 dark:border-slate-800/80 py-2.5 backdrop-blur-xs">
+        <div className="max-w-[1480px] mx-auto px-4 sm:px-6 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 overflow-hidden whitespace-nowrap">
+          <Link href="/" prefetch={false} className="hover:text-[#A42424] transition-colors shrink-0">
             الرئيسية
           </Link>
-          <ChevronLeft className="w-3.5 h-3.5 text-slate-400" />
-          <Link href={`/?category=${article.categorySlug}`} className="hover:text-slate-900 dark:hover:text-white transition-colors">
+          <ChevronLeft className="w-3.5 h-3.5 text-slate-400 rtl:rotate-0 ltr:rotate-180 shrink-0" />
+          <Link href={`/category/${article.categorySlug}`} prefetch={false} className="hover:text-[#A42424] transition-colors font-medium shrink-0">
             {article.category}
           </Link>
-          <ChevronLeft className="w-3.5 h-3.5 text-slate-400" />
-          <span className="truncate max-w-xl text-slate-800 dark:text-slate-200 font-medium">
+          <ChevronLeft className="w-3.5 h-3.5 text-slate-400 rtl:rotate-0 ltr:rotate-180 shrink-0" />
+          <span className="truncate text-slate-800 dark:text-slate-200 font-medium">
             {article.title}
           </span>
         </div>
       </nav>
 
-      {/* Main Dedicated Article Content Container spanning full page container */}
-      <main className="flex-1 max-w-[1480px] mx-auto w-full px-3 sm:px-6 py-8">
-        <article className="w-full bg-white dark:bg-[#121b2d] border border-slate-200 dark:border-slate-800/90 rounded-2xl shadow-sm p-6 sm:p-10 lg:p-12 space-y-7 transition-colors">
-          {/* Header Metadata */}
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800 text-xs">
-            <span className="font-bold text-[#dc2626]">
-              {article.category}
-            </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-slate-500 dark:text-slate-400 font-mono">
-              {article.date}
-            </span>
-          </div>
+      <main className="flex-1 w-full">
+        <div className="max-w-[920px] mx-auto w-full px-4 sm:px-6 pt-6 sm:pt-10 pb-2">
+          <article className="w-full space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800/80 text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="px-2.5 py-1 bg-[#A42424] text-white font-bold text-xs rounded-md shadow-2xs">
+                  {article.category}
+                </span>
+                {article.isSpecial && (
+                  <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-md font-bold text-xs">
+                    <span>تغطية خاصة</span>
+                  </span>
+                )}
+              </div>
 
-          {/* Headline - Primary H1 for SEO */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white leading-[1.3] max-w-5xl">
-            {article.title}
-          </h1>
+              <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span>{article.date}</span>
+              </div>
+            </div>
 
-          {/* Featured Visual with High Contrast Spanning Wide Format */}
-          <div className="relative aspect-[16/8] sm:aspect-[21/9] w-full rounded-xl overflow-hidden shadow-xs bg-slate-950">
-            <ScopeVisual type={article.imageType} className="w-full h-full" priority />
-          </div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black text-slate-900 dark:text-white leading-[1.3] rtl:text-right ltr:text-left tracking-tight">
+              {article.title}
+            </h1>
 
-          {article.caption && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-sans -mt-4">
-              {article.caption}
-            </p>
-          )}
-
-          {/* Article Body Narrative with Drop Cap */}
-          <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 max-w-5xl">
-            {article.content ? (
-              article.content.map((paragraph, idx) => (
-                <p key={idx} className={`text-justify ${idx === 0 ? 'drop-cap' : ''}`}>
-                  {paragraph}
-                </p>
-              ))
-            ) : (
-              <p className="text-justify drop-cap">
-                تغطية استقصائية شاملة ومستمرة من غرفة أخبار SCOPE MEDIA لكافة المستجدات والتطورات المتعلقة بهذا الملف، مع متابعة دقيقة لمواقف الأطراف الفاعلة وانعكاساتها المباشرة.
-              </p>
-            )}
-          </div>
-
-          {/* Subtitle, Author Byline & Social Share Bar (Moved to bottom before comments) */}
-          <div className="space-y-6 pt-6 border-t border-slate-200 dark:border-slate-800">
-            {/* Subtitle / Conclusion Deck */}
             {article.subtitle && (
-              <p className="text-base sm:text-lg lg:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-normal border-r-4 border-[#dc2626] pr-4 max-w-5xl">
+              <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium rtl:text-right ltr:text-left">
                 {article.subtitle}
               </p>
             )}
 
-            {/* Author Byline & Publishing Credits */}
-            {article.author && (
-              <div className="flex items-center gap-3.5 pt-2">
-                <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-sm text-slate-800 dark:text-slate-200 shrink-0">
-                  {article.author.name.slice(0, 2)}
-                </div>
-                <div>
-                  <div className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">
-                    بقلم: {article.author.name}
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
-                    {article.author.role}
-                  </div>
-                </div>
+            <div className="space-y-2">
+              <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden shadow-xs bg-slate-950 border border-slate-200/60 dark:border-slate-800">
+                <ScopeVisual imageUrl={article.imageUrl} type={article.imageType} className="w-full h-full object-cover" priority />
               </div>
-            )}
-
-            {/* Social Share & Bookmarks Bar */}
-            <ArticleInteractiveBar articleId={article.id} title={article.title} />
-          </div>
-
-          {/* Interactive Comments Section */}
-          <ArticleComments articleId={article.id} />
-        </article>
-
-        {/* Related Stories Section (أخبار ذات صلة) */}
-        {relatedArticles.length > 0 && (
-          <section className="mt-12 space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#dc2626]"></span>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                تقارير وأخبار ذات صلة
-              </h2>
+              {article.caption && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-sans pt-1">
+                  {article.caption}
+                </p>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 rtl:text-right ltr:text-left">
+              {article.content && article.content.length > 0 ? (
+                <ArticleBody content={article.content} title={article.title} />
+              ) : (
+                <p>
+                  تغطية استقصائية شاملة ومستمرة من غرفة أخبار SCOPE MEDIA لكافة المستجدات والتطورات المتعلقة بهذا الملف، مع متابعة دقيقة لمواقف الأطراف الفاعلة وانعكاساتها المباشرة على المشهد العام.
+                </p>
+              )}
+            </div>
+
+            {article.author && (
+              <div className="flex items-center justify-between gap-4 py-5 mt-4 border-t border-slate-200 dark:border-slate-800/80">
+                <div className="flex items-center gap-3">
+                  {article.authorAvatar ? (
+                    <Image
+                      src={optimizeCloudinaryUrl(article.authorAvatar)}
+                      alt={article.author.name}
+                      width={44}
+                      height={44}
+                      unoptimized
+                      className="w-11 h-11 rounded-full object-cover border border-slate-700 shadow-xs"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#0c1828] to-[#1e3a5f] border border-slate-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                      {article.author.name.slice(0, 1)}
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                      <span>بقلم: {article.author.name}</span>
+                      <span title="محرر صحفي معتمد"><ShieldCheck className="w-3.5 h-3.5 text-rose-500" /></span>
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      {article.author.role}
+                    </div>
+                  </div>
+                </div>
+            </div>
+          )}
+
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+              <ArticleInteractiveBar articleId={article.id} title={article.title} />
+            </div>
+          </article>
+        </div>
+
+        <ArticleNavigation currentArticleId={article.id} navArticles={navArticles} />
+
+        {relatedArticles.length > 0 && (
+          <section aria-labelledby="relTitle" className="max-w-[1320px] mx-auto w-full px-4 sm:px-6 lg:px-10 pt-7 sm:pt-8 pb-2">
+            <h2
+              id="relTitle"
+              className="mb-7 text-2xl sm:text-3xl lg:text-[2.2rem] font-black leading-snug text-[#101722] dark:text-[#f0f3f8]"
+            >
+              تقارير ذات صلة
+            </h2>
+
+            <div className="grid">
               {relatedArticles.map((rel) => (
                 <Link
                   key={rel.id}
                   href={`/news/${rel.id}`}
-                  className="bg-white dark:bg-[#121b2d] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden p-3.5 group hover:border-[#dc2626] dark:hover:border-slate-600 transition-all flex flex-col justify-between"
+                  prefetch={false}
+                  className="group grid grid-cols-1 md:grid-cols-[5fr_7fr] items-center gap-4 md:gap-10 py-7 border-t border-[#d9e0e8] dark:border-[#212c3c] last:border-b"
                 >
-                  <div>
-                    <div className="relative aspect-[16/10] bg-slate-900 rounded-lg overflow-hidden mb-3">
-                      <ScopeVisual type={rel.imageType} className="w-full h-full transition-transform duration-500 group-hover:scale-105" />
+                  <div className="relative aspect-[16/10] overflow-hidden rounded-[10px] bg-[#0d1624]">
+                    <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
+                      <ScopeVisual
+                        imageUrl={rel.imageUrl}
+                        type={rel.imageType}
+                        category={rel.categorySlug}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <span className="text-[11px] font-bold text-[#dc2626] dark:text-rose-400 block mb-1">
-                      {rel.category}
-                    </span>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#dc2626] dark:group-hover:text-rose-400 transition-colors line-clamp-2 leading-snug">
+                  </div>
+                  <div>
+                    <span className="text-[13px] font-extrabold text-[#A42424] dark:text-[#F27676]">{rel.category}</span>
+                    <h3 className="mt-1.5 text-xl sm:text-2xl lg:text-[1.9rem] font-black leading-[1.45] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676]">
                       {rel.title}
                     </h3>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 font-mono">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{rel.date}</span>
+                    {rel.subtitle && (
+                      <p className="mt-2.5 max-w-[56ch] text-base leading-[1.85] text-[#566274] dark:text-[#98a5b7] line-clamp-2">
+                        {rel.subtitle}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-[#566274] dark:text-[#98a5b7]">
+                      <span>{rel.date}</span>
+                      <span>{rel.author?.name || 'محرر SCOPE'}</span>
+                    </div>
                   </div>
                 </Link>
               ))}
             </div>
           </section>
         )}
-
-        {/* Back Link to Homepage */}
-        <div className="mt-8 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#0a1526] hover:bg-[#152a4e] text-white rounded-full text-xs sm:text-sm font-semibold transition-colors shadow-sm"
-          >
-            <ArrowRight className="w-4 h-4" />
-            <span>العودة إلى الصفحة الرئيسية لمنصة SCOPE MEDIA</span>
-          </Link>
-        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full bg-[#0a1526] text-slate-400 border-t border-slate-800 py-6 text-center text-xs mt-12">
-        <p>جميع الحقوق محفوظة لشبكة SCOPE MEDIA © 2026 · ما وراء العناوين</p>
-      </footer>
+      <ScopeFooter />
     </div>
   );
 }

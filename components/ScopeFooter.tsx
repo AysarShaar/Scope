@@ -1,190 +1,219 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { Youtube, Facebook, Instagram, ShieldCheck, Globe, Rss } from 'lucide-react';
+import Link from './NavLink';
+import { Youtube, Facebook, Instagram } from 'lucide-react';
+import { FACEBOOK_URL, INSTAGRAM_URL } from '../lib/socialLinks';
+import { useLanguage } from '../context/LanguageContext';
+import { ScopeLogo } from './ScopeLogo';
 
 interface ScopeFooterProps {
-  onSelectTab: (tab: string) => void;
+  onSelectTab?: (tab: string) => void;
 }
 
 export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
+  const { t } = useLanguage();
+
   return (
-    <footer className="w-full bg-[#0a1324] text-slate-300 border-t border-slate-800 pt-12 pb-8 mt-16 text-xs">
+    <footer className="w-full bg-[#0F4468] text-white/90 border-t border-[#0b334f] pt-12 pb-8 mt-16 text-xs overflow-hidden">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 space-y-10">
-        {/* Top Grid: Brand & Editorial Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-slate-800">
-          {/* Brand & Editorial Mission (2 cols) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-[#145785]">
           <div className="lg:col-span-2 space-y-3.5">
-            <div className="flex flex-col items-start">
-              <span className="font-black text-2xl tracking-tighter text-white font-sans uppercase">
-                SCOPE
-              </span>
-              <div className="flex items-center gap-1 -mt-0.5">
-                <span className="w-2.5 h-[1.5px] bg-[#dc2626]"></span>
-                <span className="text-[10px] font-black tracking-widest text-[#dc2626] uppercase">
-                  MEDIA
-                </span>
-                <span className="w-2.5 h-[1.5px] bg-[#dc2626]"></span>
-              </div>
-            </div>
+            <Link href="/" prefetch={false} className="inline-block" aria-label="SCOPE MEDIA">
+              <ScopeLogo variant="white" className="h-11 sm:h-12 w-auto" />
+            </Link>
 
-            <p className="text-slate-400 text-xs sm:text-[13px] leading-relaxed max-w-md font-normal">
-              منصة إعلامية رقمية مستقلة متخصصة في الصحافة الاستقصائية والتحليلات السياسية والاقتصادية المعمقة، تنطلق برؤية تسعى لكشف الحقائق وتجاوز السطحية الإخبارية إلى ما وراء العناوين.
+            <p className="text-blue-100/90 text-xs sm:text-[13px] leading-relaxed max-w-md font-normal">
+              {t.footer.mission}
             </p>
-
-            <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-rose-500" />
-                <span>ميثاق شرف مهني معتمد</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-rose-500" />
-                <span>شبكة مراسلين في 24 عاصمة</span>
-              </span>
-            </div>
           </div>
 
-          {/* Editorial Sections */}
           <div className="space-y-2.5">
-            <h4 className="font-bold text-white text-sm pb-1 border-b border-slate-800">
-              الأقسام الإخبارية
+            <h4 className="font-bold text-white text-sm pb-1 border-b border-[#145785]">
+              {t.footer.newsSections}
             </h4>
-            <ul className="space-y-2 text-slate-400">
+            <ul className="space-y-2 text-blue-100/80">
               <li>
-                <button
-                  onClick={() => onSelectTab('politics')}
-                  className="hover:text-white transition-colors cursor-pointer"
+                <Link
+                  href="/"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('home')}
+                  className="hover:text-white transition-colors cursor-pointer block"
                 >
-                  السياسة والدبلوماسية
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectTab('economy')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  المال وأسواق الطاقة
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectTab('region')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  الشرق الأوسط والخليج
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectTab('world')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  الشؤون الدولية
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectTab('investigations')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  التحقيقات الاستقصائية
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Programs & Multi-Media */}
-          <div className="space-y-2.5">
-            <h4 className="font-bold text-white text-sm pb-1 border-b border-stone-800">
-              البرامج والوسائط
-            </h4>
-            <ul className="space-y-2 text-stone-400">
-              <li>
-                <button
-                  onClick={() => onSelectTab('programs')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  سلسلة برامج SCOPE
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onSelectTab('videos')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  التقارير المصورة (فيديو)
-                </button>
-              </li>
-              <li className="hover:text-white transition-colors cursor-pointer">
-                البث الفضائي الحي
-              </li>
-              <li className="hover:text-white transition-colors cursor-pointer">
-                البودكاست الصوتي
-              </li>
-              <li className="hover:text-white transition-colors cursor-pointer">
-                خلاصات الأخبار RSS
-              </li>
-            </ul>
-          </div>
-
-          {/* Reader Services & Policies */}
-          <div className="space-y-2.5">
-            <h4 className="font-bold text-white text-sm pb-1 border-b border-stone-800">
-              المؤسسة والسياسات
-            </h4>
-            <ul className="space-y-2 text-stone-400">
-              <li>
-                <button
-                  onClick={() => onSelectTab('about')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  عن SCOPE MEDIA
-                </button>
-              </li>
-              <li className="hover:text-white transition-colors cursor-pointer">
-                هيئة التحرير والمجلس الاستشاري
-              </li>
-              <li className="hover:text-white transition-colors cursor-pointer">
-                سياسة الخصوصية وحماية البيانات
-              </li>
-              <li className="hover:text-white transition-colors cursor-pointer">
-                شروط الاستخدام والنشر
-              </li>
-              <li className="hover:text-white transition-colors cursor-pointer">
-                تواصل مع غرفة الأخبار
+                  {t.nav.home}
+                </Link>
               </li>
               <li>
                 <Link
-                  href="/admin"
-                  className="hover:text-[#dc2626] text-stone-400 hover:text-white transition-colors flex items-center gap-1.5 pt-1 border-t border-stone-800/80 mt-1"
+                  href="/category/news"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('news')}
+                  className="hover:text-white transition-colors cursor-pointer block"
                 >
-                  <ShieldCheck className="w-3 h-3 text-[#dc2626]" />
-                  <span>بوابة الإدارة (Cloudflare D1)</span>
+                  {t.nav.news}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/category/economy"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('economy')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.economy}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/category/culture"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('culture')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.culture}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/category/society"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('society')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.society}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/category/science"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('science')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.science}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-2.5">
+            <h4 className="font-bold text-white text-sm pb-1 border-b border-[#145785]">
+              {t.footer.showsAndMedia}
+            </h4>
+            <ul className="space-y-2 text-blue-100/80">
+              <li>
+                <Link
+                  href="/programs"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('programs')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.programs}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/videos"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('videos')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.videos}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/"
+                  prefetch={false}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.header.liveStream}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-2.5">
+            <h4 className="font-bold text-white text-sm pb-1 border-b border-[#145785]">
+              {t.footer.institution}
+            </h4>
+            <ul className="space-y-2 text-blue-100/80">
+              <li>
+                <Link
+                  href="/privacy"
+                  prefetch={false}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.footer.privacy}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  prefetch={false}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.footer.terms}
                 </Link>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Strip: Social, Copyright & Legal */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-stone-500 text-[11px]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-blue-200/80 text-[11px]">
           <div>
-            جميع الحقوق محفوظة لشبكة SCOPE MEDIA © 2026 · ما وراء العناوين
+            {t.footer.copyright}
           </div>
 
-          <div className="flex items-center gap-4 text-stone-400">
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="hover:text-red-500 transition-colors" title="YouTube">
-              <Youtube className="w-4 h-4" />
+          <div className="flex items-center gap-2.5 sm:gap-3 text-white">
+            <span className="text-xs font-semibold text-blue-200/90 ml-1 hidden sm:inline-block">
+              {t.footer.followUs}
+            </span>
+
+            <a
+              href="https://youtube.com"
+              target="_blank"
+              rel="noreferrer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-[#A42424] hover:border-red-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(220,38,38,0.4)] active:scale-95 cursor-pointer group shadow-sm"
+              title="يوتيوب - SCOPE MEDIA"
+              aria-label="YouTube"
+            >
+              <Youtube className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110" />
             </a>
-            <a href="https://x.com" target="_blank" rel="noreferrer" className="hover:text-white transition-colors" title="X">
-              <span className="font-bold text-xs">𝕏</span>
+
+            <a
+              href="https://x.com"
+              target="_blank"
+              rel="noreferrer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-black hover:border-slate-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(255,255,255,0.25)] active:scale-95 cursor-pointer group shadow-sm"
+              title="منصة إكس - SCOPE MEDIA"
+              aria-label="X"
+            >
+              <span className="font-bold text-sm sm:text-base leading-none transition-transform duration-300 group-hover:scale-110 font-sans">
+                𝕏
+              </span>
             </a>
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-blue-400 transition-colors" title="Facebook">
-              <Facebook className="w-4 h-4" />
+
+            <a
+              href={FACEBOOK_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-[#1877f2] hover:border-[#1877f2] hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(24,119,242,0.4)] active:scale-95 cursor-pointer group shadow-sm"
+              title="فيسبوك - SCOPE MEDIA"
+              aria-label="Facebook"
+            >
+              <Facebook className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110" />
             </a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-pink-400 transition-colors" title="Instagram">
-              <Instagram className="w-4 h-4" />
+
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-gradient-to-tr hover:from-[#f58529] hover:via-[#dd2a7b] hover:to-[#8134af] hover:border-transparent hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(221,42,123,0.4)] active:scale-95 cursor-pointer group shadow-sm"
+              title="إنستغرام - SCOPE MEDIA"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:scale-110" />
             </a>
           </div>
         </div>

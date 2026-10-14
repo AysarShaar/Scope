@@ -1,0 +1,242 @@
+'use client';
+import {
+  FileText,
+  Radio,
+  Settings,
+  LayoutDashboard,
+  LogOut,
+  RefreshCw,
+  Users,
+  Sun,
+  Moon,
+  Tv,
+  X,
+} from 'lucide-react';
+import Link from '../../../components/NavLink';
+import Image from 'next/image';
+import { useTheme } from '../../../context/ThemeContext';
+import { ScopeLogo } from '../../../components/ScopeLogo';
+
+export type AdminSection = 'dashboard' | 'articles' | 'breaking' | 'programs' | 'editors' | 'settings';
+
+interface Props {
+  current: AdminSection;
+  onChange: (s: AdminSection) => void;
+  onLogout: () => void;
+  onRefresh: () => void;
+  isLoading: boolean;
+  articlesCount: number;
+  breakingCount: number;
+  programsCount?: number;
+  editorsCount?: number;
+  userRole: 'admin' | 'editor_in_chief' | 'editor';
+  isOpen?: boolean;
+  onClose?: () => void;
+  currentUser?: {
+    name: string;
+    avatarUrl?: string | null;
+    roleLabel?: string;
+  };
+}
+
+const NAV = [
+  { id: 'dashboard' as AdminSection, label: 'لوحة التحكم', icon: LayoutDashboard },
+  { id: 'articles' as AdminSection, label: 'المقالات', icon: FileText },
+  { id: 'breaking' as AdminSection, label: 'الأخبار العاجلة', icon: Radio },
+  { id: 'programs' as AdminSection, label: 'البرامج والتغطيات', icon: Tv },
+  { id: 'editors' as AdminSection, label: 'فريق التحرير', icon: Users },
+  { id: 'settings' as AdminSection, label: 'الإعدادات', icon: Settings },
+];
+
+export default function AdminSidebar({
+  current,
+  onChange,
+  onLogout,
+  onRefresh,
+  isLoading,
+  articlesCount,
+  breakingCount,
+  programsCount = 0,
+  editorsCount = 0,
+  userRole,
+  isOpen = false,
+  onClose,
+  currentUser,
+}: Props) {
+  const { theme, toggleTheme } = useTheme();
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'م';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2);
+    return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+  };
+
+  const filteredNav = NAV.filter(item => {
+    if (userRole === 'admin') return true;
+    if (userRole === 'editor_in_chief') return item.id !== 'editors';
+    return item.id === 'dashboard' || item.id === 'articles';
+  });
+
+  const roleLabel =
+    userRole === 'admin'
+      ? 'مدير النظام'
+      : userRole === 'editor_in_chief'
+      ? 'رئيس التحرير'
+      : 'محرر';
+
+  const handleSelect = (id: AdminSection) => {
+    onChange(id);
+    if (onClose) onClose();
+  };
+
+  return (
+    <>
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`fixed md:sticky top-0 right-0 h-screen w-64 md:w-[230px] md:min-w-[230px] flex flex-col py-5 bg-white dark:bg-[#0c101c] border-l border-slate-200 dark:border-slate-800/80 z-50 md:z-20 transition-transform duration-300 ease-in-out select-none shadow-xl md:shadow-none ${
+          isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
+        }`}
+      >
+        <div className="px-5 pb-4 border-b border-slate-100 dark:border-slate-800/70">
+          <div className="flex items-center justify-between">
+            <Link href="/" prefetch={false} className="inline-block focus:outline-none" title="العودة للموقع الرئيسي">
+              <ScopeLogo className="h-8 sm:h-9 w-auto" />
+            </Link>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                {roleLabel}
+              </span>
+              <button
+                type="button"
+                onClick={onClose}
+                className="md:hidden p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {currentUser && (
+            <div className="mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800/60 flex flex-col items-center justify-center text-center">
+              <div className="relative">
+                {currentUser.avatarUrl ? (
+                  <Image
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.name}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-rose-500/40 shadow-xs"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-amber-500 text-white font-bold text-sm flex items-center justify-center ring-2 ring-rose-500/40 shadow-xs">
+                    {getInitials(currentUser.name)}
+                  </div>
+                )}
+                <span
+                  className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#0c101c]"
+                  title="متصل الآن"
+                />
+              </div>
+              <span className="mt-2 text-xs font-bold text-slate-900 dark:text-white truncate max-w-full px-1">
+                {currentUser.name}
+              </span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                {currentUser.roleLabel || roleLabel}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
+          {filteredNav.map(({ id, label, icon: Icon }) => {
+            const isActive = current === id;
+            const badge =
+              id === 'articles'
+                ? articlesCount
+                : id === 'breaking'
+                ? breakingCount
+                : id === 'programs'
+                ? programsCount
+                : id === 'editors'
+                ? editorsCount
+                : 0;
+
+            return (
+              <button
+                key={id}
+                onClick={() => handleSelect(id)}
+                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  isActive
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon size={16} className="shrink-0 opacity-80" />
+                  <span>{label}</span>
+                </div>
+                {badge > 0 && (
+                  <span
+                    className={`text-[10px] font-mono font-medium px-1.5 py-0.2 rounded ${
+                      isActive
+                        ? 'bg-slate-800 text-slate-200 dark:bg-slate-200 dark:text-slate-800'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="px-3 pt-3 border-t border-slate-100 dark:border-slate-800/70 flex flex-col gap-0.5">
+          <button
+            onClick={toggleTheme}
+            type="button"
+            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun size={15} className="text-amber-400" />
+                <span>الوضع الفاتح</span>
+              </>
+            ) : (
+              <>
+                <Moon size={15} className="text-slate-500" />
+                <span>الوضع الداكن</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+            <span>تحديث</span>
+          </button>
+
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer mt-1"
+          >
+            <LogOut size={15} />
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}

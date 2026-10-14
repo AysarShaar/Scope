@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790974819147,
+      "tag": "0000_fuzzy_tattoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790976257335,
+      "tag": "0001_editor_auth_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791162875060,
+      "tag": "0002_nappy_the_order",
+      "breakpoints": true
+    }
+  ]
+}

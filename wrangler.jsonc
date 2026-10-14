@@ -1,0 +1,61 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scopes-media",
+  // Custom entry that wraps the OpenNext worker with a page cache (see worker.ts).
+  "main": "worker.ts",
+  // Traffic must come through scope-media.net (where the Cloudflare Cache Rules live), not workers.dev.
+  // Custom domain already attached in the dashboard; keep it here so deploys do not remove it.
+  "routes": [
+    {
+      "pattern": "www.scope-media.net",
+      "zone_name": "scope-media.net",
+      "custom_domain": true
+    }
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "compatibility_date": "2026-10-02",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      // Self-reference binding used by OpenNext for caching/revalidation
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "scopes-media"
+    }
+  ],
+  // Lets worker.ts key its page cache on the deployed version (a deploy invalidates old HTML).
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  },
+  // Logging every request has its own cost; sample instead of recording 100%.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  },
+  "vars": {
+    "NEXTAUTH_URL": "https://www.scope-media.net",
+    "APP_URL": "https://www.scope-media.net",
+    "IMAGES_PUBLIC_URL": "https://img.scope-media.net"
+  },
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "scope-media-images"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "scope-media-db",
+      "database_id": "34c9e353-665a-48e8-8956-ccbdded60162",
+      "migrations_dir": "db/migrations"
+    }
+  ]
+}
