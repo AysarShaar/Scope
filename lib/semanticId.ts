@@ -91,19 +91,20 @@ export async function generateSemanticId({
   if (env?.AI && typeof env.AI.run === 'function') {
     try {
       // 2.5s timeout prevents blocking article creation if AI is slow
-      const aiPromise = env.AI.run('@cf/meta/llama-3.2-1b-instruct', {
+      // Use Llama 3.2 3B for superior Arabic comprehension without example echoing
+      const aiPromise = env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
         messages: [
           {
             role: 'system',
             content:
-              'You convert Arabic news titles to a short 3 to 5 words English URL slug. Output ONLY lowercase words separated by hyphens (e.g. gold-prices-record-surge). No quotes, no markdown, no punctuation, no other text.',
+              'You are a translator that translates Arabic news headlines into a concise English URL slug of 3 to 5 words separated by hyphens. Output ONLY the lowercase translated words separated by hyphens. Never output explanations, quotes, punctuation, or markdown.',
           },
           {
             role: 'user',
-            content: cleanText.slice(0, 200),
+            content: `Headline: ${cleanText.slice(0, 200)}`,
           },
         ],
-        max_tokens: 30,
+        max_tokens: 35,
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
