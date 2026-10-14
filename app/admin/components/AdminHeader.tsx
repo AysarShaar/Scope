@@ -272,14 +272,14 @@ export default function AdminHeader({
                 </Link>
               </div>
 
-              <div className="px-2 pt-1 border-t border-slate-100 dark:border-slate-800/80 mt-1 select-none">
+              <div className="px-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-1 select-none">
                 <button
                   type="button"
                   onClick={() => {
                     setIsMenuOpen(false);
                     onLogout();
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer text-xs font-semibold text-right"
+                  className="w-full flex items-center justify-center px-3 py-2.5 rounded-xl text-rose-700 dark:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200/80 dark:border-rose-900/60 transition-colors cursor-pointer text-xs font-bold"
                 >
                   <span>تسجيل الخروج من الحساب</span>
                 </button>

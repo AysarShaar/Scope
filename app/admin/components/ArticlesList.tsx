@@ -241,16 +241,22 @@ export default function ArticlesList({
     isSpecialOnly,
   ]);
 
-  const [removingSpecialId, setRemovingSpecialId] = useState<string | null>(null);
+  const [togglingSpecialId, setTogglingSpecialId] = useState<string | null>(null);
 
-  const handleRemoveSpecial = async (art: ScopeArticle) => {
-    if (!confirm(`هل أنت متأكد من إزالة المقال:\n"${art.title}"\nمن المقالات المميزة؟`)) return;
-    setRemovingSpecialId(art.id);
+  const handleToggleSpecial = async (art: ScopeArticle) => {
+    const isCurrentlySpecial = Boolean(art.isSpecial);
+    const nextVal = !isCurrentlySpecial;
+    const confirmMsg = nextVal
+      ? `هل تريد تعيين المقال:\n"${art.title}"\nكمقال مميز؟`
+      : `هل أنت متأكد من إزالة المقال:\n"${art.title}"\nمن المقالات المميزة؟`;
+    if (!confirm(confirmMsg)) return;
+
+    setTogglingSpecialId(art.id);
     try {
       const res = await fetch(`/api/articles/${encodeURIComponent(art.id)}/special`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isSpecial: false }),
+        body: JSON.stringify({ isSpecial: nextVal }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.success) {
@@ -259,9 +265,9 @@ export default function ArticlesList({
         alert(data?.error || 'فشل تحديث حالة المقال المميز');
       }
     } catch {
-      alert('حدث خطأ أثناء الاتصال بالخادم لإزالة المقال من المميزة');
+      alert('حدث خطأ أثناء الاتصال بالخادم لتحديث حالة المقال المميز');
     } finally {
-      setRemovingSpecialId(null);
+      setTogglingSpecialId(null);
     }
   };
 
@@ -726,14 +732,14 @@ export default function ArticlesList({
                             <Edit3 size={14} />
                           </button>
 
-                          {canManageArticles && (art.isSpecial || isSpecialOnly) && (
+                          {canManageArticles && (
                             <button
-                              onClick={() => handleRemoveSpecial(art)}
-                              disabled={removingSpecialId === art.id}
-                              className="inline-flex items-center px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                              title="إزالة من المقالات المميزة"
+                              onClick={() => handleToggleSpecial(art)}
+                              disabled={togglingSpecialId === art.id}
+                              className="inline-flex items-center px-2.5 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg border border-slate-200/60 dark:border-slate-700/60 transition-colors cursor-pointer disabled:opacity-50"
+                              title={art.isSpecial ? 'إزالة من المقالات المميزة' : 'تعيين كمقال مميز'}
                             >
-                              <span>إزالة من المميزة</span>
+                              <span>{art.isSpecial ? 'إزالة من المميزة' : 'تعيين كمميز'}</span>
                             </button>
                           )}
 
@@ -807,13 +813,13 @@ export default function ArticlesList({
                       <Edit3 size={14} />
                       <span>تعديل</span>
                     </button>
-                    {canManageArticles && (art.isSpecial || isSpecialOnly) && (
+                    {canManageArticles && (
                       <button
-                        onClick={() => handleRemoveSpecial(art)}
-                        disabled={removingSpecialId === art.id}
-                        className="flex-1 h-10 inline-flex items-center justify-center rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 disabled:opacity-50 cursor-pointer transition-colors"
+                        onClick={() => handleToggleSpecial(art)}
+                        disabled={togglingSpecialId === art.id}
+                        className="flex-1 h-10 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/80 active:bg-slate-100 dark:active:bg-slate-800 disabled:opacity-50 cursor-pointer transition-colors"
                       >
-                        <span>إزالة من المميزة</span>
+                        <span>{art.isSpecial ? 'إزالة من المميزة' : 'تعيين كمميز'}</span>
                       </button>
                     )}
                     {!isPending && (
