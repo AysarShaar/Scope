@@ -10,9 +10,9 @@
 
 @layer base {
   :root {
-    --font-heading: var(--font-cairo), var(--font-alexandria), system-ui, -apple-system, sans-serif;
-    --font-body: var(--font-cairo), var(--font-alexandria), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-serif: var(--font-amiri), serif;
+    --font-heading: var(--font-cairo), system-ui, -apple-system, sans-serif;
+    --font-body: var(--font-cairo), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-serif: var(--font-cairo), Georgia, serif;
     --brand-primary: #0F4468;
     --brand-accent: #A42424;
     --brand-accent-hover: #8B1E1E;

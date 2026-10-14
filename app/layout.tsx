@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Cairo, Alexandria, IBM_Plex_Sans_Arabic, Amiri } from 'next/font/google';
+import { Cairo } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '../context/ThemeContext';
 import { LanguageProvider } from '../context/LanguageContext';
@@ -9,29 +9,8 @@ import { FACEBOOK_URL, INSTAGRAM_URL } from '../lib/socialLinks';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
-  weight: ['400', '600', '700', '800', '900'],
-  variable: '--font-cairo',
-  display: 'swap',
-});
-
-const alexandria = Alexandria({
-  subsets: ['arabic', 'latin'],
   weight: ['300', '400', '500', '600', '700', '800', '900'],
-  variable: '--font-alexandria',
-  display: 'swap',
-});
-
-const ibmPlexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-ibm-plex',
-  display: 'swap',
-});
-
-const amiri = Amiri({
-  subsets: ['arabic', 'latin'],
-  weight: ['400', '700'],
-  variable: '--font-amiri',
+  variable: '--font-cairo',
   display: 'swap',
 });
 
@@ -106,7 +85,7 @@ export default function RootLayout({
       lang="ar"
       dir="rtl"
       suppressHydrationWarning
-      className={`${cairo.variable} ${alexandria.variable} ${ibmPlexArabic.variable} ${amiri.variable}`}
+      className={cairo.variable}
     >
       <head>
         <script

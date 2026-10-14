@@ -34,10 +34,6 @@ const SECTION_CONFIG: Record<
   AdminSection,
   { label: string; description: string }
 > = {
-  dashboard: {
-    label: 'لوحة التحكم',
-    description: 'نظرة عامة على الإحصائيات والمحتوى',
-  },
   articles: {
     label: 'إدارة المقالات',
     description: 'كتابة وتحرير ونشر الأخبار والمقالات',
@@ -98,7 +94,7 @@ export default function AdminHeader({
     };
   }, [isMenuOpen]);
 
-  const currentSection = SECTION_CONFIG[section] || SECTION_CONFIG.dashboard;
+  const currentSection = SECTION_CONFIG[section] || SECTION_CONFIG.articles;
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between px-3.5 sm:px-6 py-2.5 bg-white/95 dark:bg-[#0c101c]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 select-none shadow-xs transition-colors shrink-0">

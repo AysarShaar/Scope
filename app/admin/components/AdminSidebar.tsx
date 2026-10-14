@@ -8,19 +8,14 @@ import Image from 'next/image';
 import { useTheme } from '../../../context/ThemeContext';
 import { ScopeLogo } from '../../../components/ScopeLogo';
 
-export type AdminSection = 'dashboard' | 'articles' | 'special_articles' | 'breaking' | 'programs' | 'editors' | 'settings';
+export type AdminSection = 'articles' | 'special_articles' | 'breaking' | 'programs' | 'editors' | 'settings';
 
 interface Props {
   current: AdminSection;
-  onChange: (s: AdminSection) => void;
+  onChange?: (s: AdminSection) => void;
   onLogout: () => void;
   onRefresh: () => void;
   isLoading: boolean;
-  articlesCount: number;
-  specialCount?: number;
-  breakingCount: number;
-  programsCount?: number;
-  editorsCount?: number;
   userRole: 'admin' | 'editor_in_chief' | 'editor';
   isOpen?: boolean;
   onClose?: () => void;
@@ -31,14 +26,13 @@ interface Props {
   };
 }
 
-const NAV: { id: AdminSection; label: string }[] = [
-  { id: 'dashboard', label: 'لوحة التحكم' },
-  { id: 'articles', label: 'المقالات' },
-  { id: 'special_articles', label: 'المقالات المميزة' },
-  { id: 'breaking', label: 'الأخبار العاجلة' },
-  { id: 'programs', label: 'البرامج والتغطيات' },
-  { id: 'editors', label: 'فريق التحرير' },
-  { id: 'settings', label: 'الإعدادات' },
+const NAV: { id: AdminSection; label: string; href: string }[] = [
+  { id: 'articles', label: 'المقالات', href: '/admin/articles' },
+  { id: 'special_articles', label: 'المقالات المميزة', href: '/admin/special' },
+  { id: 'breaking', label: 'الأخبار العاجلة', href: '/admin/breaking' },
+  { id: 'programs', label: 'البرامج والتغطيات', href: '/admin/programs' },
+  { id: 'editors', label: 'فريق التحرير', href: '/admin/editors' },
+  { id: 'settings', label: 'الإعدادات', href: '/admin/settings' },
 ];
 
 export default function AdminSidebar({
@@ -47,11 +41,6 @@ export default function AdminSidebar({
   onLogout,
   onRefresh,
   isLoading,
-  articlesCount,
-  specialCount = 0,
-  breakingCount,
-  programsCount = 0,
-  editorsCount = 0,
   userRole,
   isOpen = false,
   onClose,
@@ -69,7 +58,7 @@ export default function AdminSidebar({
   const filteredNav = NAV.filter(item => {
     if (userRole === 'admin') return true;
     if (userRole === 'editor_in_chief') return item.id !== 'editors';
-    return item.id === 'dashboard' || item.id === 'articles';
+    return item.id === 'articles';
   });
 
   const roleLabel =
@@ -80,7 +69,7 @@ export default function AdminSidebar({
       : 'محرر';
 
   const handleSelect = (id: AdminSection) => {
-    onChange(id);
+    if (onChange) onChange(id);
     if (onClose) onClose();
   };
 
@@ -151,44 +140,26 @@ export default function AdminSidebar({
         </div>
 
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1 md:overflow-y-auto shrink-0 md:shrink">
-          {filteredNav.map(({ id, label }) => {
+          {filteredNav.map(({ id, label, href }) => {
             const isActive = current === id;
-            const badge =
-              id === 'articles'
-                ? articlesCount
-                : id === 'special_articles'
-                ? specialCount
-                : id === 'breaking'
-                ? breakingCount
-                : id === 'programs'
-                ? programsCount
-                : id === 'editors'
-                ? editorsCount
-                : 0;
 
             return (
-              <button
+              <Link
                 key={id}
-                onClick={() => handleSelect(id)}
-                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
+                href={href}
+                prefetch={false}
+                onClick={() => {
+                  if (onChange) onChange(id);
+                  if (onClose) onClose();
+                }}
+                className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50 font-medium'
                 }`}
               >
                 <span>{label}</span>
-                {badge > 0 && (
-                  <span
-                    className={`text-[10px] font-mono font-medium px-1.5 py-0.5 rounded ${
-                      isActive
-                        ? 'bg-slate-800 text-slate-200 dark:bg-slate-200 dark:text-slate-800'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                    }`}
-                  >
-                    {badge}
-                  </span>
-                )}
-              </button>
+              </Link>
             );
           })}
         </nav>
