@@ -40,6 +40,7 @@ interface TipTapEditorProps {
   placeholder?: string;
   dir?: 'rtl' | 'ltr';
   className?: string;
+  titleHint?: string;
 }
 
 const ToolbarButton = ({
@@ -80,6 +81,7 @@ export function TipTapEditor({
   placeholder = 'ابدأ الكتابة...',
   dir = 'rtl',
   className = '',
+  titleHint = '',
 }: TipTapEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -145,6 +147,9 @@ export function TipTapEditor({
     try {
       const formData = new FormData();
       formData.append('file', await prepareImageForUpload(file));
+      if (titleHint && titleHint.trim()) {
+        formData.append('title', titleHint.trim());
+      }
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,

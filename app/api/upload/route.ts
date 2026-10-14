@@ -9,6 +9,7 @@ import {
   getImagesBaseUrl,
   publicImageUrl,
 } from '../../../lib/imageStorage';
+import { generateSemanticId } from '../../../lib/semanticId';
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -127,7 +128,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const key = buildImageKey(detected.ext);
+    const rawHint = formData.get("title") || formData.get("hint") || formData.get("name");
+    const hint = typeof rawHint === "string" ? rawHint.trim() : "";
+
+    let imageId: string | undefined;
+    if (hint) {
+      imageId = await generateSemanticId({
+        text: hint,
+        prefix: "img",
+        env,
+      });
+    }
+
+    const key = buildImageKey(detected.ext, new Date(), imageId);
     await env.IMAGES.put(key, await blob.arrayBuffer(), {
       httpMetadata: {
         contentType: detected.mime,

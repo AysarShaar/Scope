@@ -5,6 +5,8 @@ export interface CloudflareEnv {
   ASSETS: import("@cloudflare/workers-types").Fetcher;
   /** R2 bucket for article images. */
   IMAGES?: import("@cloudflare/workers-types").R2Bucket;
+  /** Cloudflare Workers AI binding. */
+  AI?: any;
 }
 
 export function getCloudflareEnv(): CloudflareEnv | null {

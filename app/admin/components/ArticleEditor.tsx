@@ -93,7 +93,20 @@ export default function ArticleEditor({
   const [isSpecial, setIsSpecial] = useState<boolean>(Boolean(article?.isSpecial));
   const [htmlContent, setHtmlContent] = useState(() => contentArrayToHtml(article?.content));
 
-  const { isUploadingImage, uploadError, setUploadError, fileInputRef, handleFileUpload } = useImageUpload(setImageUrl);
+  const [attachedImageSlug, setAttachedImageSlug] = useState<string>('');
+
+  const { isUploadingImage, uploadError, setUploadError, fileInputRef, handleFileUpload } = useImageUpload(
+    (url, key) => {
+      setImageUrl(url);
+      if (key) {
+        const baseName = key.split('/').pop()?.replace(/\.[^.]+$/, '');
+        if (baseName) setAttachedImageSlug(baseName);
+      }
+    },
+    {
+      getTitle: () => title,
+    },
+  );
 
   const canPublishDirectly = userRole === 'admin' || userRole === 'editor_in_chief';
 
@@ -144,6 +157,7 @@ export default function ArticleEditor({
     }
 
     await onSave({
+      id: isNew && attachedImageSlug ? attachedImageSlug : article?.id,
       title: title.trim(),
       subtitle: subtitle.trim() || undefined,
       category: cat.labelAr,
@@ -455,6 +469,7 @@ export default function ArticleEditor({
                 content={htmlContent}
                 onChange={setHtmlContent}
                 placeholder="اكتب المحتوى هنا..."
+                titleHint={title}
               />
             </div>
           </div>

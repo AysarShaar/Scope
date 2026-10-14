@@ -83,6 +83,7 @@ export default function ProgramsManager({
 
   const { fileInputRef, isUploadingImage, uploadError, setUploadError, handleFileUpload } = useImageUpload(setImageUrl, {
     failureMessage: 'فشل رفع الصورة',
+    getTitle: () => title,
   });
 
   const [epTitle, setEpTitle] = useState('');

@@ -11,6 +11,7 @@ import { sanitizeArticleDate } from "../../../lib/dates";
 import { errorMessage } from '../../../lib/errors';
 import { buildMatchQuery } from "../../../lib/search";
 import { withEdgeCache } from "../../../lib/server/edgeCache";
+import { generateSemanticId } from "../../../lib/semanticId";
 
 
 // Public listings are cached briefly at the edge (see lib/server/edgeCache.ts); the admin view (includePending) never is.
@@ -218,7 +219,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const id = `article_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    let id: string | undefined;
+    if (body.id && typeof body.id === 'string') {
+      const sanitized = body.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+      if (sanitized.length >= 3) {
+        if (env?.DB) {
+          try {
+            const db = getDb(env.DB);
+            const existing = await db
+              .select({ id: articles.id })
+              .from(articles)
+              .where(eq(articles.id, sanitized))
+              .limit(1);
+            if (existing.length === 0) {
+              id = sanitized;
+            }
+          } catch {
+            id = sanitized;
+          }
+        } else {
+          id = sanitized;
+        }
+      }
+    }
+
+    if (!id) {
+      id = await generateSemanticId({
+        text: body.title,
+        prefix: 'article',
+        env,
+      });
+    }
     const now = new Date().toISOString();
 
     let finalAuthorName = body.author?.name ?? null;
