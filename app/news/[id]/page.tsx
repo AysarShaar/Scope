@@ -98,14 +98,17 @@ export default async function ArticlePage({ params }: PageProps) {
   }
 
   const [allArticles, categoryArticles, breakingNews] = await Promise.all([
-    getServerArticles(undefined, 10),
-    getServerArticles(article.categorySlug, 5),
+    getServerArticles(undefined, 20),
+    getServerArticles(article.categorySlug, 10),
     getServerBreaking(12),
   ]);
 
   const navArticles = allArticles.filter((a) => a.id !== article.id).slice(0, 7);
-  const directRelated = (categoryArticles || []).filter((a) => a.id !== article.id);
-  const fallbackRelated = (allArticles || []).filter((a) => a.id !== article.id && !directRelated.some((r) => r.id === a.id));
+  const excludedIds = new Set([article.id, ...navArticles.map((a) => a.id)]);
+  const directRelated = (categoryArticles || []).filter((a) => !excludedIds.has(a.id));
+  const fallbackRelated = (allArticles || []).filter(
+    (a) => !excludedIds.has(a.id) && !directRelated.some((r) => r.id === a.id)
+  );
   const relatedArticles = [...directRelated, ...fallbackRelated].slice(0, 3);
   const siteUrl = getSiteUrl();
   const articleUrl = `${siteUrl}/news/${article.id}`;
