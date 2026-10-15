@@ -193,8 +193,14 @@ export async function GET(request: NextRequest) {
     sinceDate.setHours(now.getHours() - 24);
   }
 
+  const durationMs = now.getTime() - sinceDate.getTime();
+  const prevSinceDate = new Date(sinceDate.getTime() - durationMs);
+  const prevUntilDate = sinceDate;
+
   const since = sinceDate.toISOString();
   const until = now.toISOString();
+  const prevSince = prevSinceDate.toISOString();
+  const prevUntil = prevUntilDate.toISOString();
 
   const { apiToken, zoneId, tokenSource } = await resolveCredentials(env);
 
@@ -294,6 +300,7 @@ export async function GET(request: NextRequest) {
           dataTransferredBytes: baseBytes,
           cacheHitRatio: 94.2,
           avgViewsPerVisitor: +(basePageViews / baseVisitors).toFixed(1),
+          visitorsGrowth: 8.6,
         },
         topArticles,
         topCountries: countries,
@@ -305,7 +312,13 @@ export async function GET(request: NextRequest) {
 
   // 3. Clean, validated Cloudflare GraphQL Query using sum { visits } instead of unsupported uniq
   const graphqlQuery = `
-    query GetDomainAnalytics($zoneTag: String!, $since: String!, $until: String!) {
+    query GetDomainAnalytics(
+      $zoneTag: String!
+      $since: String!
+      $until: String!
+      $prevSince: String!
+      $prevUntil: String!
+    ) {
       viewer {
         zones(filter: { zoneTag: $zoneTag }) {
           totalOverview: httpRequestsAdaptiveGroups(
@@ -319,6 +332,17 @@ export async function GET(request: NextRequest) {
             sum {
               visits
               edgeResponseBytes
+            }
+          }
+          previousOverview: httpRequestsAdaptiveGroups(
+            filter: {
+              datetime_geq: $prevSince
+              datetime_leq: $prevUntil
+            }
+            limit: 1
+          ) {
+            sum {
+              visits
             }
           }
           topArticles: httpRequestsAdaptiveGroups(
@@ -385,6 +409,8 @@ export async function GET(request: NextRequest) {
           zoneTag: zoneId,
           since,
           until,
+          prevSince,
+          prevUntil,
         },
       }),
     });
@@ -407,6 +433,16 @@ export async function GET(request: NextRequest) {
     const totalRequests = totalGroup.count || 0;
     const totalVisitors = totalGroup.sum?.visits || Math.round(totalRequests * 0.72) || 0;
     const dataTransferredBytes = totalGroup.sum?.edgeResponseBytes || 0;
+
+    // Calculate dynamic growth rate compared to previous equivalent period
+    const prevGroup = zoneData.previousOverview?.[0] || {};
+    const prevVisitors = prevGroup.sum?.visits || 0;
+    let visitorsGrowth: number | null = null;
+    if (prevVisitors > 0) {
+      visitorsGrowth = +(((totalVisitors - prevVisitors) / prevVisitors) * 100).toFixed(1);
+    } else if (totalVisitors > 0) {
+      visitorsGrowth = 100.0;
+    }
 
     // Resolve top articles from DB by path
     const rawArticles = zoneData.topArticles || [];
@@ -602,6 +638,7 @@ export async function GET(request: NextRequest) {
           dataTransferredBytes,
           cacheHitRatio: 94.6,
           avgViewsPerVisitor: totalVisitors > 0 ? +(totalRequests / totalVisitors).toFixed(1) : 1.0,
+          visitorsGrowth,
         },
         topArticles,
         topCountries: countries,
@@ -629,6 +666,7 @@ export async function GET(request: NextRequest) {
             dataTransferredBytes: 0,
             cacheHitRatio: 0,
             avgViewsPerVisitor: 0,
+            visitorsGrowth: null,
           },
           topArticles: [],
           topCountries: [],

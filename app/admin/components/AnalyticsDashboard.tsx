@@ -7,6 +7,7 @@ import {
   ExternalLink,
   ShieldAlert,
   ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 import { useAdmin } from './AdminShell';
 import { ScopeVisual } from '../../../components/ScopeVisual';
@@ -22,6 +23,7 @@ interface AnalyticsData {
     dataTransferredBytes: number;
     cacheHitRatio: number;
     avgViewsPerVisitor: number;
+    visitorsGrowth?: number | null;
   };
   topArticles: Array<{
     id: string;
@@ -218,10 +220,33 @@ export default function AnalyticsDashboard() {
               <div className="mt-2 text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
                 {loading ? '—' : (data?.overview?.totalVisitors ?? 0).toLocaleString()}
               </div>
-              <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-medium flex items-center gap-0.5">
-                <ArrowUpRight className="w-3 h-3" />
-                <span>+12.4%</span>
-              </div>
+              {loading ? (
+                <div className="mt-1 text-[11px] text-slate-400 font-mono">جاري الحساب...</div>
+              ) : data?.overview?.visitorsGrowth !== null && data?.overview?.visitorsGrowth !== undefined ? (
+                <div
+                  className={`mt-1 text-[11px] font-mono font-medium flex items-center gap-1 ${
+                    data.overview.visitorsGrowth >= 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                  }`}
+                >
+                  {data.overview.visitorsGrowth >= 0 ? (
+                    <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
+                  ) : (
+                    <ArrowDownRight className="w-3 h-3 flex-shrink-0" />
+                  )}
+                  <span dir="ltr">
+                    {data.overview.visitorsGrowth >= 0
+                      ? `+${data.overview.visitorsGrowth}%`
+                      : `${data.overview.visitorsGrowth}%`}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-sans mr-0.5">مقارنة بالفترة السابقة</span>
+                </div>
+              ) : (
+                <div className="mt-1 text-[11px] text-slate-400 font-mono">
+                  قراء نشطون • Edge
+                </div>
+              )}
             </div>
 
             <div className="p-4 rounded-xl bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800">
