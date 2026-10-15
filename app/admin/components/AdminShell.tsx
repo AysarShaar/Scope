@@ -140,7 +140,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   // Determine section from pathname
   let currentSection: AdminSection = 'articles';
-  if (pathname.startsWith('/admin/special')) {
+  if (pathname.startsWith('/admin/dashboard')) {
+    currentSection = 'dashboard';
+  } else if (pathname.startsWith('/admin/special')) {
     currentSection = 'special_articles';
   } else if (pathname.startsWith('/admin/breaking')) {
     currentSection = 'breaking';
@@ -300,7 +302,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             onLogout={handleLogout}
             onNavigate={(sec) => {
               const target =
-                sec === 'special_articles'
+                sec === 'dashboard'
+                  ? '/admin/dashboard'
+                  : sec === 'special_articles'
                   ? '/admin/special'
                   : sec === 'breaking'
                   ? '/admin/breaking'

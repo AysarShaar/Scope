@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { useTheme } from '../../../context/ThemeContext';
 import { ScopeLogo } from '../../../components/ScopeLogo';
 
-export type AdminSection = 'articles' | 'special_articles' | 'breaking' | 'programs' | 'editors' | 'settings';
+export type AdminSection = 'dashboard' | 'articles' | 'special_articles' | 'breaking' | 'programs' | 'editors' | 'settings';
 
 interface Props {
   current: AdminSection;
@@ -27,6 +27,7 @@ interface Props {
 }
 
 const NAV: { id: AdminSection; label: string; href: string }[] = [
+  { id: 'dashboard', label: 'لوحة المؤشرات', href: '/admin/dashboard' },
   { id: 'articles', label: 'المقالات', href: '/admin/articles' },
   { id: 'special_articles', label: 'المقالات المميزة', href: '/admin/special' },
   { id: 'breaking', label: 'الأخبار العاجلة', href: '/admin/breaking' },
@@ -56,6 +57,7 @@ export default function AdminSidebar({
   };
 
   const filteredNav = NAV.filter(item => {
+    if (item.id === 'dashboard') return userRole === 'admin';
     if (userRole === 'admin') return true;
     if (userRole === 'editor_in_chief') return item.id !== 'editors';
     return item.id === 'articles';
