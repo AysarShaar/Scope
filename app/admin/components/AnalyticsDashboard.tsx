@@ -8,9 +8,11 @@ import {
   ShieldAlert,
   ArrowUpRight,
   ArrowDownRight,
+  Eye,
 } from 'lucide-react';
 import { useAdmin } from './AdminShell';
 import { ScopeVisual } from '../../../components/ScopeVisual';
+import { formatArticleArabicDate } from './ArticlesList';
 
 type TimeRange = 'today' | '7d' | '30d';
 type TabKey = 'overview' | 'articles' | 'geography' | 'devices';
@@ -34,6 +36,8 @@ interface AnalyticsData {
     categorySlug: string;
     imageUrl?: string | null;
     date?: string | null;
+    createdAt?: string | null;
+    authorName?: string | null;
     views: number;
     uniques: number;
   }>;
@@ -343,7 +347,10 @@ export default function AnalyticsDashboard() {
               </div>
 
               <div className="p-4 space-y-3">
-                {(data?.topCountries || []).slice(0, 5).map((country) => (
+                {[...(data?.topCountries || [])]
+                  .sort((a, b) => b.visitors - a.visitors)
+                  .slice(0, 5)
+                  .map((country) => (
                   <div key={country.code} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-medium text-slate-800 dark:text-slate-200">
@@ -369,140 +376,288 @@ export default function AnalyticsDashboard() {
 
       {/* TAB 2: TOP ARTICLES */}
       {activeTab === 'articles' && (
-        <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-900 dark:text-white">
-              ترتيب المقالات حسب عدد القراءات
-            </span>
-            <span className="text-[11px] text-slate-400 font-mono">
-              Cloudflare Requests
+        <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                المقالات الأكثر قراءة وتفاعلاً
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                إحصائيات القراءات المسجلة عبر شبكة Cloudflare مع الربط التلقائي ببيانات المقالات
+              </p>
+            </div>
+            <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
+              {data?.topArticles?.length ?? 0} مادة
             </span>
           </div>
 
           {loading ? (
-            <div className="p-10 text-center text-xs text-slate-400 font-mono">
-              <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2 text-[#A42424]" />
-              جاري جلب إحصائيات المقالات...
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-3">
+              <RefreshCw size={24} className="animate-spin text-[#A42424]" />
+              <span className="text-xs font-medium">جاري استعلام إحصائيات المقالات الأكثر قراءة...</span>
             </div>
           ) : (data?.topArticles?.length ?? 0) === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-400">
-              لا توجد بيانات قراءات مسجلة لهذه الفترة.
+            <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-xs">
+              لا توجد قراءات مسجلة للمقالات في الفترة الزمنية المحددة.
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-              {data?.topArticles.map((art, idx) => (
-                <div
-                  key={art.id + idx}
-                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/25 transition-colors"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    <span className="font-mono text-xs font-bold text-slate-400 w-6 text-center shrink-0">
-                      {idx < 9 ? `0${idx + 1}` : idx + 1}
-                    </span>
+            <>
+              {/* Desktop Table View matching ArticlesList */}
+              <div className="overflow-x-auto max-sm:hidden">
+                <table className="w-full text-xs text-right">
+                  <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 border-b border-slate-100 dark:border-slate-800/80">
+                    <tr>
+                      <th className="px-4 py-3.5 font-semibold">المادة الصحفية</th>
+                      <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden sm:table-cell">القسم</th>
+                      <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap">المشاهدات</th>
+                      <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap">القرّاء الفعليون</th>
+                      <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden lg:table-cell">تاريخ النشر</th>
+                      <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap text-center">عرض</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {data?.topArticles.map((art, idx) => {
+                      const { dateAr, timeStr } = formatArticleArabicDate(
+                        art.createdAt || undefined,
+                        art.date || undefined
+                      );
+                      return (
+                        <tr
+                          key={art.id + idx}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-900/40 transition-colors"
+                        >
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-start gap-3">
+                              <span className="font-mono text-xs font-bold text-slate-400 w-5 shrink-0 pt-2 text-center">
+                                {idx < 9 ? `0${idx + 1}` : idx + 1}
+                              </span>
+                              {art.imageUrl ? (
+                                <img
+                                  src={art.imageUrl}
+                                  alt=""
+                                  className="w-11 h-11 rounded-lg object-cover shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800"
+                                />
+                              ) : (
+                                <div className="w-11 h-11 rounded-lg shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center font-mono font-bold text-slate-400 text-xs">
+                                  {idx + 1}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1 space-y-0.5">
+                                <Link
+                                  href={`/news/${art.id}`}
+                                  prefetch={false}
+                                  target="_blank"
+                                  className="font-bold text-slate-900 dark:text-white line-clamp-1 block text-[13px] hover:text-[#A42424] dark:hover:text-rose-400 transition-colors"
+                                >
+                                  {art.title}
+                                </Link>
+                                {art.subtitle ? (
+                                  <span className="text-slate-500 dark:text-slate-400 line-clamp-1 block text-xs">
+                                    {art.subtitle}
+                                  </span>
+                                ) : art.authorName ? (
+                                  <span className="text-slate-400 text-xs">
+                                    بقلم: {art.authorName}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                          </td>
 
-                    {art.imageUrl && (
-                      <div className="w-14 h-10 rounded-md overflow-hidden shrink-0 bg-slate-900 border border-slate-200 dark:border-slate-800 relative hidden sm:block">
-                        <ScopeVisual
-                          imageUrl={art.imageUrl}
-                          category={art.categorySlug}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
+                          <td className="px-3.5 py-3.5 whitespace-nowrap hidden sm:table-cell">
+                            <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
+                              {art.category || 'عام'}
+                            </span>
+                          </td>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          {art.category}
-                        </span>
-                        {art.date && (
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {art.date}
+                          <td className="px-3.5 py-3.5 whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                              <span className="font-mono font-bold text-slate-900 dark:text-white text-xs sm:text-[13px]">
+                                {art.views.toLocaleString()}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-sans">مشاهدة</span>
+                            </div>
+                          </td>
+
+                          <td className="px-3.5 py-3.5 whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                              <span className="font-mono font-bold text-xs sm:text-[13px]">
+                                {art.uniques.toLocaleString()}
+                              </span>
+                              <span className="text-[10px] font-sans">قارئ</span>
+                            </div>
+                          </td>
+
+                          <td className="px-3.5 py-3.5 whitespace-nowrap text-slate-600 dark:text-slate-300 hidden lg:table-cell">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-semibold text-slate-800 dark:text-slate-200 inline-block" dir="rtl">
+                                <bdi>{dateAr}</bdi>
+                              </span>
+                              {timeStr && (
+                                <span className="text-[10px] text-slate-400 font-mono" dir="ltr">
+                                  {timeStr}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="px-3.5 py-3.5 whitespace-nowrap text-center">
+                            <div className="flex items-center justify-center">
+                              <a
+                                href={`/news/${art.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-2 text-slate-400 hover:text-[#A42424] dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer"
+                                title="عرض المنشور"
+                              >
+                                <Eye size={16} />
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card List View matching ArticlesList */}
+              <ul className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800/70">
+                {data?.topArticles.map((art, idx) => {
+                  const { dateAr } = formatArticleArabicDate(
+                    art.createdAt || undefined,
+                    art.date || undefined
+                  );
+                  return (
+                    <li key={art.id + idx} className="p-3.5">
+                      <div className="flex gap-3">
+                        <div className="relative shrink-0">
+                          {art.imageUrl ? (
+                            <img
+                              src={art.imageUrl}
+                              alt=""
+                              className="w-16 h-16 rounded-lg object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center font-mono font-bold text-slate-400 text-sm">
+                              #{idx + 1}
+                            </div>
+                          )}
+                          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#A42424] text-white text-[10px] font-bold font-mono flex items-center justify-center shadow-xs">
+                            {idx + 1}
                           </span>
-                        )}
-                      </div>
-                      <Link
-                        href={`/news/${art.id}`}
-                        prefetch={false}
-                        target="_blank"
-                        className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white hover:text-[#A42424] dark:hover:text-rose-400 truncate block transition-colors leading-snug"
-                      >
-                        {art.title}
-                      </Link>
-                      {art.subtitle && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xl">
-                          {art.subtitle}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                        </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800/60">
-                    <div className="text-right sm:text-left">
-                      <div className="text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white">
-                        {art.views.toLocaleString()} <span className="text-[10px] font-sans font-normal text-slate-500">مشاهدة</span>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-[14px] leading-snug text-slate-900 dark:text-white line-clamp-2">
+                            {art.title}
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {[art.category || 'عام', art.authorName].filter(Boolean).join(' · ')}
+                          </p>
+                          {dateAr !== '—' && (
+                            <p className="mt-1 text-[11px] text-slate-400">
+                              {dateAr}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-[10px] font-mono text-slate-400">
-                        {art.uniques.toLocaleString()} قارئ فريد
-                      </div>
-                    </div>
 
-                    <Link
-                      href={`/news/${art.id}`}
-                      prefetch={false}
-                      target="_blank"
-                      className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
-                      title="معاينة المقال"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      {/* Views, unique readers, and eye view button */}
+                      <div className="mt-3 flex items-center gap-2">
+                        <div className="flex-1 h-9 px-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">المشاهدات:</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">
+                            {art.views.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 h-9 px-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40 text-xs text-emerald-700 dark:text-emerald-300">
+                          <span className="text-[11px] font-medium">القرّاء:</span>
+                          <span className="font-mono font-bold">
+                            {art.uniques.toLocaleString()}
+                          </span>
+                        </div>
+
+                        <a
+                          href={`/news/${art.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label="عرض المنشور"
+                          title="عرض المنشور"
+                          className="h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-[#A42424] dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <Eye size={16} />
+                        </a>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </div>
       )}
 
       {/* TAB 3: GEOGRAPHY */}
       {activeTab === 'geography' && (
-        <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/80">
-            <span className="text-xs font-bold text-slate-900 dark:text-white">
-              التوزيع الجغرافي للجمهور حسب الدول
+        <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                التوزيع الجغرافي للجمهور (ترتيب تنازلي)
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                توزيع القراء والزيارات الفعلية حسب الدول مرتبة تنازلياً من الأكثر إلى الأقل تفاعلاً
+              </p>
+            </div>
+            <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
+              {data?.topCountries?.length ?? 0} دولة
             </span>
           </div>
 
-          <div className="p-5 space-y-4">
-            {(data?.topCountries || []).map((country) => (
-              <div key={country.code} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{country.flag}</span>
-                    <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                      {country.nameAr}
-                    </span>
-                    <span className="text-xs font-mono text-slate-400 hidden sm:inline" dir="ltr">
-                      ({country.nameEn})
-                    </span>
+          <div className="p-5 space-y-3">
+            {[...(data?.topCountries || [])]
+              .sort((a, b) => b.visitors - a.visitors)
+              .map((country, idx) => (
+                <div
+                  key={country.code + idx}
+                  className="space-y-1.5 p-3 rounded-xl hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors border border-transparent hover:border-slate-200/60 dark:hover:border-slate-800/60"
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono text-xs font-bold text-slate-400 w-5 text-center shrink-0">
+                        {idx < 9 ? `0${idx + 1}` : idx + 1}
+                      </span>
+                      <span className="text-lg leading-none">{country.flag}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-[13px]">
+                        {country.nameAr}
+                      </span>
+                      <span className="text-xs font-mono text-slate-400 hidden sm:inline" dir="ltr">
+                        ({country.nameEn})
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
+                        {country.visitors.toLocaleString()}{' '}
+                        <span className="text-xs font-normal text-slate-400 font-sans">قارئ</span>
+                      </span>
+                      <span
+                        className="font-mono text-xs font-bold text-slate-600 dark:text-slate-300 w-14 text-left"
+                        dir="ltr"
+                      >
+                        {country.percentage}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
-                      {country.visitors.toLocaleString()} <span className="text-xs font-normal text-slate-400 font-sans">قارئ</span>
-                    </span>
-                    <span className="font-mono text-xs font-semibold text-slate-500 w-12 text-left" dir="ltr">
-                      {country.percentage}%
-                    </span>
+                  <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mr-7">
+                    <div
+                      className="h-full bg-[#A42424] dark:bg-rose-500 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(1, country.percentage))}%` }}
+                    />
                   </div>
                 </div>
-                <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#A42424] dark:bg-rose-500 rounded-full"
-                    style={{ width: `${Math.min(100, country.percentage)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       )}

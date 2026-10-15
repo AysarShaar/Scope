@@ -17,6 +17,8 @@ interface TopArticleItem {
   categorySlug: string;
   imageUrl?: string | null;
   date?: string | null;
+  createdAt?: string | null;
+  authorName?: string | null;
   views: number;
   uniques: number;
 }
@@ -213,6 +215,8 @@ export async function GET(request: NextRequest) {
     categorySlug: string;
     imageUrl: string | null;
     date: string | null;
+    createdAt: string | null;
+    authorName: string | null;
   }> = [];
 
   if (env?.DB) {
@@ -227,6 +231,8 @@ export async function GET(request: NextRequest) {
           categorySlug: articles.categorySlug,
           imageUrl: articles.imageUrl,
           date: articles.date,
+          createdAt: articles.createdAt,
+          authorName: articles.authorName,
         })
         .from(articles)
         .orderBy(desc(articles.createdAt))
@@ -256,6 +262,8 @@ export async function GET(request: NextRequest) {
         categorySlug: art.categorySlug,
         imageUrl: art.imageUrl,
         date: art.date,
+        createdAt: art.createdAt,
+        authorName: art.authorName,
         views,
         uniques,
       };
@@ -469,6 +477,8 @@ export async function GET(request: NextRequest) {
             categorySlug: articles.categorySlug,
             imageUrl: articles.imageUrl,
             date: articles.date,
+            createdAt: articles.createdAt,
+            authorName: articles.authorName,
           })
           .from(articles)
           .where(inArray(articles.id, articleIds));
@@ -498,6 +508,8 @@ export async function GET(request: NextRequest) {
           categorySlug: dbArt?.categorySlug || "news",
           imageUrl: dbArt?.imageUrl || null,
           date: dbArt?.date || null,
+          createdAt: dbArt?.createdAt || null,
+          authorName: dbArt?.authorName || null,
           views: item.count || 0,
           uniques: item.sum?.visits || Math.round((item.count || 1) * 0.75),
         };
@@ -510,20 +522,22 @@ export async function GET(request: NextRequest) {
       0
     ) || totalVisitors || 1;
 
-    const countries: CountryItem[] = rawCountries.map((c: { count: number; dimensions?: { clientCountryName?: string }; sum?: { visits?: number } }) => {
-      const rawName = c.dimensions?.clientCountryName || "";
-      const formatted = formatCountry(rawName);
-      const visitors = c.sum?.visits || c.count || 0;
-      const percentage = +((visitors / totalCountryVisitors) * 100).toFixed(1);
-      return {
-        code: formatted.code,
-        nameAr: formatted.ar,
-        nameEn: formatted.en,
-        flag: formatted.flag,
-        visitors,
-        percentage,
-      };
-    });
+    const countries: CountryItem[] = rawCountries
+      .map((c: { count: number; dimensions?: { clientCountryName?: string }; sum?: { visits?: number } }) => {
+        const rawName = c.dimensions?.clientCountryName || "";
+        const formatted = formatCountry(rawName);
+        const visitors = c.sum?.visits || c.count || 0;
+        const percentage = +((visitors / totalCountryVisitors) * 100).toFixed(1);
+        return {
+          code: formatted.code,
+          nameAr: formatted.ar,
+          nameEn: formatted.en,
+          flag: formatted.flag,
+          visitors,
+          percentage,
+        };
+      })
+      .sort((a: CountryItem, b: CountryItem) => b.visitors - a.visitors);
 
     // Optional referrers query: isolated in try-catch so Free plan restrictions never break the dashboard
     let rawReferrers: Array<{ count: number; dimensions?: { clientRefererHost?: string } }> = [];
