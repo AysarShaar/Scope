@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Search,
   Plus,
@@ -101,11 +102,20 @@ export default function ArticlesList({
   userRole,
   isSpecialOnly = false,
 }: Props) {
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'pending'>('all');
-  const [catFilter, setCatFilter] = useState('all');
-  const [authorFilter, setAuthorFilter] = useState('all');
+  const searchParams = useSearchParams();
+
+  const urlQ = searchParams?.get('q') || '';
+  const urlStatus = (searchParams?.get('status') as 'all' | 'published' | 'pending') || 'all';
+  const urlCat = searchParams?.get('cat') || 'all';
+  const urlAuthor = searchParams?.get('author') || 'all';
+  const urlSort = (searchParams?.get('sort') as 'desc' | 'asc') || 'desc';
+  const urlPage = parseInt(searchParams?.get('page') || '1', 10) || 1;
+
+  const [search, setSearch] = useState(urlQ);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlQ);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'pending'>(urlStatus);
+  const [catFilter, setCatFilter] = useState(urlCat);
+  const [authorFilter, setAuthorFilter] = useState(urlAuthor);
   const [datePreset, setDatePreset] = useState<
     'all' | 'today' | 'yesterday' | 'last7days' | 'thisMonth' | 'exact' | 'custom'
   >('all');
@@ -113,8 +123,23 @@ export default function ArticlesList({
   const [exactDate, setExactDate] = useState('');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const [page, setPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>(urlSort);
+  const [page, setPage] = useState(urlPage);
+
+  // Sync state to URL without reloading
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set('q', debouncedSearch);
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (catFilter !== 'all') params.set('cat', catFilter);
+    if (authorFilter !== 'all') params.set('author', authorFilter);
+    if (sortOrder !== 'desc') params.set('sort', sortOrder);
+    if (page > 1) params.set('page', String(page));
+    const str = params.toString();
+    const newUrl = str ? `?${str}` : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+  }, [debouncedSearch, statusFilter, catFilter, authorFilter, sortOrder, page]);
 
   const [articles, setArticles] = useState<ScopeArticle[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -581,9 +606,71 @@ export default function ArticlesList({
 
       <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs">
         {isDbLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400 space-y-3">
-            <RefreshCw size={24} className="animate-spin text-[#A42424]" />
-            <span className="text-xs font-medium">جاري استعلام المواد من قاعدة البيانات...</span>
+          <div>
+            {/* Desktop Table Skeletons */}
+            <div className="overflow-x-auto max-sm:hidden">
+              <table className="w-full text-xs text-right">
+                <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 border-b border-slate-100 dark:border-slate-800/80">
+                  <tr>
+                    <th className="px-4 py-3.5 font-semibold">المادة الصحفية</th>
+                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden sm:table-cell">القسم</th>
+                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap">الحالة</th>
+                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden md:table-cell">الكاتب</th>
+                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden lg:table-cell">تاريخ الإنشاء</th>
+                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap text-center">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 shrink-0" />
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="h-4 w-3/4 bg-slate-200/80 dark:bg-slate-800/80 rounded" />
+                            <div className="h-3 w-1/3 bg-slate-100 dark:bg-slate-800/50 rounded" />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3.5 py-3.5 hidden sm:table-cell">
+                        <div className="h-5 w-16 bg-slate-200/70 dark:bg-slate-800/70 rounded-md" />
+                      </td>
+                      <td className="px-3.5 py-3.5">
+                        <div className="h-5 w-20 bg-slate-200/70 dark:bg-slate-800/70 rounded-md" />
+                      </td>
+                      <td className="px-3.5 py-3.5 hidden md:table-cell">
+                        <div className="h-4 w-24 bg-slate-200/70 dark:bg-slate-800/70 rounded" />
+                      </td>
+                      <td className="px-3.5 py-3.5 hidden lg:table-cell">
+                        <div className="h-4 w-28 bg-slate-200/70 dark:bg-slate-800/70 rounded" />
+                      </td>
+                      <td className="px-3.5 py-3.5 text-center">
+                        <div className="h-8 w-28 mx-auto bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card Skeletons */}
+            <ul className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800/70 p-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="p-3.5 space-y-3 animate-pulse">
+                  <div className="flex gap-3">
+                    <div className="w-16 h-16 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 shrink-0" />
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="h-4 w-3/4 bg-slate-200/80 dark:bg-slate-800/80 rounded" />
+                      <div className="h-3 w-1/2 bg-slate-100 dark:bg-slate-800/60 rounded" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-10 flex-1 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
+                    <div className="h-10 flex-1 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         ) : articles.length === 0 ? (
           <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-xs space-y-3">
