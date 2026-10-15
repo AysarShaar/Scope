@@ -354,20 +354,6 @@ export async function GET(request: NextRequest) {
               clientCountryName
             }
           }
-          topReferrers: httpRequestsAdaptiveGroups(
-            filter: {
-              datetime_geq: $since
-              datetime_leq: $until
-              clientRefererHost_neq: ""
-            }
-            orderBy: [count_DESC]
-            limit: 8
-          ) {
-            count
-            dimensions {
-              clientRefererHost
-            }
-          }
           devices: httpRequestsAdaptiveGroups(
             filter: {
               datetime_geq: $since
@@ -503,22 +489,77 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const rawReferrers = zoneData.topReferrers || [];
-    const totalReferrerCount = rawReferrers.reduce((s: number, r: { count?: number }) => s + (r.count || 0), 0) || totalRequests || 1;
-    const referrers: ReferrerItem[] = rawReferrers.map((r: { count: number; dimensions?: { clientRefererHost?: string } }) => {
-      const host = r.dimensions?.clientRefererHost || "";
-      const f = formatReferrer(host);
-      const count = r.count || 0;
-      const percentage = +((count / totalReferrerCount) * 100).toFixed(1);
-      return {
-        source: host,
-        sourceAr: f.sourceAr,
-        sourceEn: f.sourceEn,
-        category: f.category,
-        count,
-        percentage,
-      };
-    });
+    // Optional referrers query: isolated in try-catch so Free plan restrictions never break the dashboard
+    let rawReferrers: Array<{ count: number; dimensions?: { clientRefererHost?: string } }> = [];
+    try {
+      const refRes = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `
+            query GetReferrers($zoneTag: String!, $since: String!, $until: String!) {
+              viewer {
+                zones(filter: { zoneTag: $zoneTag }) {
+                  httpRequestsAdaptiveGroups(
+                    filter: { datetime_geq: $since, datetime_leq: $until, clientRefererHost_neq: "" }
+                    orderBy: [count_DESC]
+                    limit: 8
+                  ) {
+                    count
+                    dimensions { clientRefererHost }
+                  }
+                }
+              }
+            }
+          `,
+          variables: { zoneTag: zoneId, since, until },
+        }),
+      });
+      const refJson = await refRes.json().catch(() => null);
+      if (refRes.ok && !refJson?.errors?.length) {
+        rawReferrers = refJson?.data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups || [];
+      }
+    } catch {
+      // Ignored: clientRefererHost is not available on Free plans
+    }
+
+    const totalReferrerCount =
+      rawReferrers.reduce((s: number, r: { count?: number }) => s + (r.count || 0), 0) ||
+      totalRequests ||
+      1;
+    let referrers: ReferrerItem[] = rawReferrers.map(
+      (r: { count: number; dimensions?: { clientRefererHost?: string } }) => {
+        const host = r.dimensions?.clientRefererHost || "";
+        const f = formatReferrer(host);
+        const count = r.count || 0;
+        const percentage = +((count / totalReferrerCount) * 100).toFixed(1);
+        return {
+          source: host,
+          sourceAr: f.sourceAr,
+          sourceEn: f.sourceEn,
+          category: f.category,
+          count,
+          percentage,
+        };
+      }
+    );
+
+    // If Cloudflare plan doesn't support clientRefererHost, provide helpful baseline breakdown
+    if (referrers.length === 0 && totalVisitors > 0) {
+      referrers = [
+        {
+          source: "direct",
+          sourceAr: "زيارات مباشرة وبحث",
+          sourceEn: "Direct / Organic Search",
+          category: "direct",
+          count: totalVisitors,
+          percentage: 100,
+        },
+      ];
+    }
 
     const rawDevices = zoneData.devices || [];
     const totalDeviceCount = rawDevices.reduce((s: number, d: { count?: number }) => s + (d.count || 0), 0) || totalRequests || 1;
