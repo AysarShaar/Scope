@@ -12,7 +12,7 @@ import { useAdmin } from './AdminShell';
 import { ScopeVisual } from '../../../components/ScopeVisual';
 
 type TimeRange = 'today' | '7d' | '30d';
-type TabKey = 'overview' | 'articles' | 'geography' | 'sources' | 'devices';
+type TabKey = 'overview' | 'articles' | 'geography' | 'devices';
 
 interface AnalyticsData {
   timeRange: TimeRange;
@@ -125,7 +125,6 @@ export default function AnalyticsDashboard() {
     { id: 'overview', label: 'نظرة عامة' },
     { id: 'articles', label: 'المقالات الأكثر قراءة' },
     { id: 'geography', label: 'التوزيع الجغرافي' },
-    { id: 'sources', label: 'مصادر الزيارات' },
     { id: 'devices', label: 'الأجهزة والشبكة' },
   ];
 
@@ -189,18 +188,18 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <nav aria-label="أقسام التحليلات" className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar gap-1 sm:gap-4">
+      {/* Tabs with rounded boxed frames, spacing, and red illumination on active */}
+      <nav aria-label="أقسام التحليلات" className="flex items-center overflow-x-auto no-scrollbar gap-3 sm:gap-4 py-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`pb-2.5 text-xs font-bold transition-colors border-b-2 whitespace-nowrap cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 whitespace-nowrap cursor-pointer active:scale-[0.98] border ${
                 isActive
-                  ? 'border-[#A42424] text-[#A42424] dark:text-rose-400 dark:border-rose-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                  ? 'border-[#A42424] text-[#A42424] dark:border-rose-500 dark:text-rose-300 bg-rose-50/70 dark:bg-rose-950/30 shadow-md shadow-rose-500/20 ring-2 ring-[#A42424]/40 dark:ring-rose-500/50'
+                  : 'border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#0c101c] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               {tab.label}
@@ -483,50 +482,7 @@ export default function AnalyticsDashboard() {
         </div>
       )}
 
-      {/* TAB 4: SOURCES */}
-      {activeTab === 'sources' && (
-        <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800/80">
-            <span className="text-xs font-bold text-slate-900 dark:text-white">
-              مصادر وتدفق الزيارات
-            </span>
-          </div>
-
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-            {(data?.topReferrers || []).map((ref, idx) => (
-              <div key={ref.source + idx} className="p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                    {ref.category}
-                  </span>
-                  <div>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white block">
-                      {ref.sourceAr}
-                    </span>
-                    <span className="text-xs font-mono text-slate-400" dir="ltr">
-                      {ref.sourceEn}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-left font-mono">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white block">
-                      {ref.count.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-slate-400">زيارة</span>
-                  </div>
-                  <span className="text-xs font-mono font-bold w-12 text-left text-slate-500" dir="ltr">
-                    {ref.percentage}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 5: DEVICES & NETWORK */}
+      {/* TAB 4: DEVICES & NETWORK */}
       {activeTab === 'devices' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl p-5">
