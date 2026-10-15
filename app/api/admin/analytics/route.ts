@@ -303,7 +303,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 3. Clean, validated Cloudflare GraphQL Query without unsupported filter fields
+  // 3. Clean, validated Cloudflare GraphQL Query using sum { visits } instead of unsupported uniq
   const graphqlQuery = `
     query GetDomainAnalytics($zoneTag: String!, $since: String!, $until: String!) {
       viewer {
@@ -317,10 +317,8 @@ export async function GET(request: NextRequest) {
           ) {
             count
             sum {
+              visits
               edgeResponseBytes
-            }
-            uniq {
-              uniques
             }
           }
           topArticles: httpRequestsAdaptiveGroups(
@@ -333,11 +331,11 @@ export async function GET(request: NextRequest) {
             limit: 20
           ) {
             count
+            sum {
+              visits
+            }
             dimensions {
               clientRequestPath
-            }
-            uniq {
-              uniques
             }
           }
           topCountries: httpRequestsAdaptiveGroups(
@@ -349,11 +347,11 @@ export async function GET(request: NextRequest) {
             limit: 12
           ) {
             count
+            sum {
+              visits
+            }
             dimensions {
               clientCountryName
-            }
-            uniq {
-              uniques
             }
           }
           topReferrers: httpRequestsAdaptiveGroups(
@@ -421,7 +419,7 @@ export async function GET(request: NextRequest) {
 
     const totalGroup = zoneData.totalOverview?.[0] || {};
     const totalRequests = totalGroup.count || 0;
-    const totalVisitors = totalGroup.uniq?.uniques || 0;
+    const totalVisitors = totalGroup.sum?.visits || Math.round(totalRequests * 0.72) || 0;
     const dataTransferredBytes = totalGroup.sum?.edgeResponseBytes || 0;
 
     // Resolve top articles from DB by path
@@ -462,7 +460,7 @@ export async function GET(request: NextRequest) {
     }
 
     const topArticles: TopArticleItem[] = rawArticles
-      .map((item: { count: number; dimensions?: { clientRequestPath?: string }; uniq?: { uniques?: number } }) => {
+      .map((item: { count: number; dimensions?: { clientRequestPath?: string }; sum?: { visits?: number } }) => {
         const path = item.dimensions?.clientRequestPath || "";
         const match = path.match(/^\/news\/([^/?#]+)/);
         const id = match ? match[1] : path;
@@ -479,21 +477,21 @@ export async function GET(request: NextRequest) {
           imageUrl: dbArt?.imageUrl || null,
           date: dbArt?.date || null,
           views: item.count || 0,
-          uniques: item.uniq?.uniques || Math.round((item.count || 1) * 0.75),
+          uniques: item.sum?.visits || Math.round((item.count || 1) * 0.75),
         };
       })
       .slice(0, 15);
 
     const rawCountries = zoneData.topCountries || [];
     const totalCountryVisitors = rawCountries.reduce(
-      (sum: number, c: { uniq?: { uniques?: number } }) => sum + (c.uniq?.uniques || 0),
+      (sum: number, c: { sum?: { visits?: number }; count?: number }) => sum + (c.sum?.visits || c.count || 0),
       0
     ) || totalVisitors || 1;
 
-    const countries: CountryItem[] = rawCountries.map((c: { count: number; dimensions?: { clientCountryName?: string }; uniq?: { uniques?: number } }) => {
+    const countries: CountryItem[] = rawCountries.map((c: { count: number; dimensions?: { clientCountryName?: string }; sum?: { visits?: number } }) => {
       const rawName = c.dimensions?.clientCountryName || "";
       const formatted = formatCountry(rawName);
-      const visitors = c.uniq?.uniques || c.count || 0;
+      const visitors = c.sum?.visits || c.count || 0;
       const percentage = +((visitors / totalCountryVisitors) * 100).toFixed(1);
       return {
         code: formatted.code,
