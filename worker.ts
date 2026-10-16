@@ -40,11 +40,27 @@ const refreshing = new Set<string>();
 const RSC_VARY_HEADERS = ['next-router-state-tree', 'next-router-prefetch', 'next-router-segment-prefetch', 'next-url'];
 const RESPONSE_VARY = 'rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, accept-encoding';
 
+const STATIC_ASSETS = new Set([
+  '/favicon.ico',
+  '/favicon.svg',
+  '/icon.svg',
+  '/icon',
+  '/apple-touch-icon.png',
+  '/logo.svg',
+  '/lens-icon.svg',
+  '/live-placeholder.html',
+  '/header-skyline.avif',
+  '/og-default.png',
+  '/logo-512.png',
+  '/scope-media-logo-v2.svg',
+  '/scope-media-logo-v2-dark.svg',
+  '/scope-media-logo-white.svg',
+]);
+
 const KNOWN_EXACT = new Set([
   '/', '/news', '/programs', '/videos', '/search', '/privacy', '/terms', '/admin',
-  '/sitemap.xml', '/news-sitemap.xml', '/robots.txt', '/favicon.ico', '/favicon.svg', '/logo.svg', '/lens-icon.svg',
-  '/live-placeholder.html', '/header-skyline.avif', '/og-default.png', '/logo-512.png', '/apple-touch-icon.png',
-  '/scope-media-logo-v2.svg', '/scope-media-logo-v2-dark.svg', '/scope-media-logo-white.svg',
+  '/sitemap.xml', '/news-sitemap.xml', '/robots.txt',
+  ...STATIC_ASSETS,
 ]);
 const KNOWN_PREFIXES = ['/news/', '/category/', '/programs/', '/admin/', '/api/', '/_next/', '/.well-known/'];
 
@@ -55,6 +71,7 @@ function isKnownPath(pathname: string): boolean {
 
 /** Returns the cache lifetime (seconds) for a public path, or 0 when the path must not be cached. */
 function ttlForPath(pathname: string): number {
+  if (STATIC_ASSETS.has(pathname)) return 604800; // 7 days in Edge Cache for static assets/favicons
   if (pathname === '/') return 120;
   if (pathname.startsWith('/news/')) return 120;
   if (pathname.startsWith('/programs/')) return 120;
@@ -114,7 +131,8 @@ async function handle(request: Request, env: WorkerEnv, ctx: WorkerCtx): Promise
   const ttl = ttlForPath(url.pathname);
   const cache = getEdgeCache();
   if (!ttl || !cache || request.url.length > MAX_URL_LENGTH) return passThrough();
-  if ((request.headers.get('cookie') || '').includes(SESSION_COOKIE)) return passThrough();
+  const isStatic = STATIC_ASSETS.has(url.pathname);
+  if (!isStatic && (request.headers.get('cookie') || '').includes(SESSION_COOKIE)) return passThrough();
 
   let key: Request;
   try {
@@ -192,8 +210,14 @@ export default {
     // while anything older is revalidated so nobody pins stale HTML across a deploy.
     if (response.headers.get('X-Worker-Cache')) {
       const headers = new Headers(response.headers);
-      const browserTtl = response.status === 200 ? Math.min(60, ttlForPath(new URL(request.url).pathname)) : 0;
-      headers.set('Cache-Control', browserTtl > 0 ? `public, max-age=${browserTtl}` : 'public, max-age=0, must-revalidate');
+      const pathname = new URL(request.url).pathname;
+      const isStatic = STATIC_ASSETS.has(pathname);
+      const browserTtl = response.status === 200
+        ? (isStatic ? 604800 : Math.min(60, ttlForPath(pathname)))
+        : 0;
+      headers.set('Cache-Control', browserTtl > 0
+        ? (isStatic ? `public, max-age=${browserTtl}, immutable` : `public, max-age=${browserTtl}`)
+        : 'public, max-age=0, must-revalidate');
       headers.set('Vary', RESPONSE_VARY);
       return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
     }

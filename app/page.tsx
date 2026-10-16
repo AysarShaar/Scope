@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import HomeClient from '../components/HomeClient';
 import { getHomeBootstrap } from '../lib/server/home';
 
-// D1 does not exist at build time, so the page must be rendered per request (worker.ts caches it).
-export const dynamic = 'force-dynamic';
+// ISR: Revalidate every 120 seconds
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },

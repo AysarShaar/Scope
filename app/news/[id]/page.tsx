@@ -15,7 +15,14 @@ import { getServerBreaking } from '../../../lib/server/breaking';
 import { getSiteUrl } from '../../../lib/site';
 import { absoluteImageUrl, articleIsoDates, trimDescription, SITE_NAME, getNewsArticleImageUrls } from '../../../lib/seo';
 
+// ISR: Revalidate every 120 seconds
 export const revalidate = 120;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const articles = await getServerArticles(undefined, 20).catch(() => []);
+  return articles.map((art) => ({ id: art.id }));
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;

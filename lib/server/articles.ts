@@ -131,7 +131,16 @@ export const getServerArticlesPaginated = cache(
       };
     }
 
-    // No D1 binding (plain `next dev`): fall back to the HTTP API.
+    // No D1 binding (plain `next dev`): fall back to the HTTP API when APP_URL is configured.
+    if (!process.env.APP_URL && typeof window === 'undefined') {
+      return {
+        articles: [],
+        total: 0,
+        totalPages: 1,
+        hasMore: false,
+      };
+    }
+
     const result = await newsService.getArticlesPaginated({ category: categorySlug, limit, page });
     return {
       articles: result.articles,

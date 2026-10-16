@@ -8,34 +8,29 @@ import { getSiteUrl } from '../../../lib/site';
 import { getCategorySeo, SITE_NAME } from '../../../lib/seo';
 import { safeJsonLd } from '../../../lib/safeJsonLd';
 
-function parsePage(raw?: string): number {
-  const parsed = parseInt(raw || '1', 10);
-  return Math.min(500, Math.max(1, Number.isNaN(parsed) ? 1 : parsed));
-}
+// ISR: Revalidate every 120 seconds
+export const revalidate = 120;
+export const dynamicParams = true;
 
-// D1 does not exist at build time, so render per request (worker.ts caches the result).
-export const dynamic = 'force-dynamic';
+export function generateStaticParams() {
+  return Object.keys(categoryTranslations).map((slug) => ({ slug }));
+}
 
 const PAGE_SIZE = 20;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
 }
 
-export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   if (!Object.prototype.hasOwnProperty.call(categoryTranslations, slug)) {
     return { title: 'القسم غير موجود', robots: { index: false, follow: false } };
   }
-  const { page: rawPage } = await searchParams;
-  const page = parsePage(rawPage);
   const label = categoryTranslations[slug].AR;
   const siteUrl = getSiteUrl();
-  const seo = getCategorySeo(slug, page, label);
-  const base = `${siteUrl}/category/${slug}`;
-  // Page 1 is the canonical URL of the section; deeper pages are self-canonical so they stay crawlable.
-  const canonical = `${base}${seo.canonicalSuffix}`;
+  const seo = getCategorySeo(slug, 1, label);
+  const canonical = `${siteUrl}/category/${slug}`;
   const ogImageUrl = `${siteUrl}/og-default.png`;
 
   return {
@@ -68,21 +63,19 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   };
 }
 
-export default async function CategoryPage({ params, searchParams }: PageProps) {
+export default async function CategoryPage({ params }: PageProps) {
   const { slug } = await params;
 
   // Unknown categories (bot scans, typos) are rejected before touching the database.
   if (!Object.prototype.hasOwnProperty.call(categoryTranslations, slug)) notFound();
 
-  const { page: rawPage } = await searchParams;
-  const page = parsePage(rawPage);
   const label = categoryTranslations[slug].AR;
   const siteUrl = getSiteUrl();
-  const seo = getCategorySeo(slug, page, label);
-  const canonicalUrl = `${siteUrl}/category/${slug}${seo.canonicalSuffix}`;
+  const seo = getCategorySeo(slug, 1, label);
+  const canonicalUrl = `${siteUrl}/category/${slug}`;
 
   const [result, breaking] = await Promise.all([
-    getServerArticlesPaginated(slug, page, PAGE_SIZE),
+    getServerArticlesPaginated(slug, 1, PAGE_SIZE),
     getServerBreaking(12),
   ]);
 
@@ -137,7 +130,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
       />
       <CategoryClient
         slug={slug}
-        page={page}
+        page={1}
         articles={result.articles}
         total={result.total}
         totalPages={result.totalPages}

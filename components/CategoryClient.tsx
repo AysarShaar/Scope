@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from './NavLink';
 import { useRouter } from 'next/navigation';
 import {
@@ -63,13 +63,63 @@ export default function CategoryClient({
   const { lang, dir, t, toggleLang } = useLanguage();
   const [isLiveOpen, setIsLiveOpen] = useState(false);
 
-  const goToPage = (newPage: number) => {
-    if (newPage < 1 || (newPage > totalPages && totalPages > 0)) return;
-    router.push(newPage === 1 ? `/category/${slug}` : `/category/${slug}?page=${newPage}`, { scroll: false });
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const [currentPage, setCurrentPage] = useState(page);
+  const [articleList, setArticleList] = useState(articles);
+  const [totalCount, setTotalCount] = useState(total);
+  const [pagesCount, setPagesCount] = useState(totalPages);
+  const [hasMoreItems, setHasMoreItems] = useState(hasMore);
+  const [isLoadingPage, setIsLoadingPage] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(page);
+    setArticleList(articles);
+    setTotalCount(total);
+    setPagesCount(totalPages);
+    setHasMoreItems(hasMore);
+  }, [slug, page, articles, total, totalPages, hasMore]);
+
+  const goToPage = async (newPage: number) => {
+    if (newPage < 1 || (newPage > pagesCount && pagesCount > 0)) return;
+    if (newPage === 1) {
+      setCurrentPage(1);
+      setArticleList(articles);
+      setTotalCount(total);
+      setPagesCount(totalPages);
+      setHasMoreItems(hasMore);
+      router.push(`/category/${slug}`, { scroll: false });
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setIsLoadingPage(true);
+    try {
+      const res = await fetch(`/api/articles?category=${encodeURIComponent(slug)}&page=${newPage}&limit=20`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.articles) {
+          setArticleList(data.articles);
+          setCurrentPage(newPage);
+          setTotalCount(data.total);
+          setPagesCount(data.totalPages);
+          setHasMoreItems(data.hasMore);
+          router.push(`/category/${slug}?page=${newPage}`, { scroll: false });
+          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    } catch (err) {
+      console.error('[CategoryClient] pagination fetch error:', err);
+    } finally {
+      setIsLoadingPage(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const p = parseInt(urlParams.get('page') || '1', 10);
+    if (p > 1) {
+      goToPage(p);
+    }
+  }, []);
 
   const categoryName = categoryTranslations[slug]?.[lang] || slug;
   const CategoryIcon = CATEGORY_ICONS[slug] || Newspaper;
@@ -99,7 +149,7 @@ export default function CategoryClient({
           </div>
         </div>
 
-        {articles.length === 0 ? (
+        {articleList.length === 0 ? (
           <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-16 text-center space-y-3 shadow-xs">
             <CategoryIcon className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
@@ -112,9 +162,9 @@ export default function CategoryClient({
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className={`space-y-8 transition-opacity duration-200 ${isLoadingPage ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-              {articles.map((art) => (
+              {articleList.map((art) => (
                 <Link
                   key={art.id}
                   href={`/news/${art.id}`}
@@ -158,23 +208,23 @@ export default function CategoryClient({
               <div className="text-xs text-slate-500 dark:text-slate-400">
                 {lang === 'AR' ? (
                   <>
-                    عرض صفحة <span className="font-bold text-slate-900 dark:text-white">{page}</span> من أصل{' '}
-                    <span className="font-bold text-slate-900 dark:text-white">{totalPages}</span> صفحة
+                    عرض صفحة <span className="font-bold text-slate-900 dark:text-white">{currentPage}</span> من أصل{' '}
+                    <span className="font-bold text-slate-900 dark:text-white">{pagesCount}</span> صفحة
                   </>
                 ) : (
                   <>
-                    Page <span className="font-bold text-slate-900 dark:text-white">{page}</span> of{' '}
-                    <span className="font-bold text-slate-900 dark:text-white">{totalPages}</span>
+                    Page <span className="font-bold text-slate-900 dark:text-white">{currentPage}</span> of{' '}
+                    <span className="font-bold text-slate-900 dark:text-white">{pagesCount}</span>
                   </>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => goToPage(page - 1)}
-                  disabled={page <= 1}
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage <= 1 || isLoadingPage}
                   className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    page <= 1
+                    currentPage <= 1 || isLoadingPage
                       ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800/40 text-slate-400'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-2xs'
                   }`}
@@ -184,10 +234,10 @@ export default function CategoryClient({
                 </button>
 
                 <button
-                  onClick={() => goToPage(page + 1)}
-                  disabled={page >= totalPages && !hasMore}
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={(currentPage >= pagesCount && !hasMoreItems) || isLoadingPage}
                   className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    page >= totalPages && !hasMore
+                    (currentPage >= pagesCount && !hasMoreItems) || isLoadingPage
                       ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800/40 text-slate-400'
                       : 'bg-[#A42424] hover:bg-[#8B1E1E] text-white shadow-sm hover:shadow'
                   }`}

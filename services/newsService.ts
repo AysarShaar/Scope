@@ -28,6 +28,9 @@ function resolveApiBase(): string {
 
 async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
   const base = resolveApiBase();
+  if (typeof window === "undefined" && !base) {
+    throw new Error(`Cannot fetch relative URL '${path}' on server without APP_URL`);
+  }
   const url = base && path.startsWith('/') ? `${base}${path}` : path;
   return fetch(url, init);
 }
