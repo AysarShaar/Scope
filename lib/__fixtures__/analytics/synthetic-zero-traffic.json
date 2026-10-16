@@ -1,0 +1,46 @@
+{
+ "meta": {
+  "synthetic": true,
+  "note": "A genuinely empty window."
+ },
+ "raw": {
+  "overview": {
+   "ok": true,
+   "zone": {
+    "current": [],
+    "previous": []
+   }
+  },
+  "articles": {
+   "ok": true,
+   "zone": {
+    "current": [],
+    "previous": []
+   }
+  },
+  "sources": {
+   "ok": true,
+   "zone": {
+    "groups": []
+   }
+  },
+  "countries": {
+   "ok": true,
+   "zone": {
+    "groups": []
+   }
+  },
+  "devices": {
+   "ok": true,
+   "zone": {
+    "groups": []
+   }
+  },
+  "delivery": {
+   "ok": true,
+   "zone": {
+    "groups": []
+   }
+  }
+ }
+}

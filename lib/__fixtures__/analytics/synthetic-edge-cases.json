@@ -1,0 +1,269 @@
+{
+ "meta": {
+  "synthetic": true,
+  "note": "Hand-built to exercise edge cases (duplicate paths, zero baseline, remainder rows, merged hosts, look-alike domains). NOT recorded from Cloudflare. Real recordings from scripts/cf-analytics-probe.mjs are named real-*.json and run through the same invariants."
+ },
+ "raw": {
+  "overview": {
+   "ok": true,
+   "zone": {
+    "current": [
+     {
+      "count": 10000,
+      "sum": {
+       "visits": 4000
+      }
+     }
+    ],
+    "previous": [
+     {
+      "count": 8000,
+      "sum": {
+       "visits": 4400
+      }
+     }
+    ]
+   }
+  },
+  "articles": {
+   "ok": true,
+   "zone": {
+    "current": [
+     {
+      "count": 1500,
+      "dimensions": {
+       "clientRequestPath": "/news/a1"
+      }
+     },
+     {
+      "count": 300,
+      "dimensions": {
+       "clientRequestPath": "/news/a1/"
+      }
+     },
+     {
+      "count": 900,
+      "dimensions": {
+       "clientRequestPath": "/news/a2"
+      }
+     },
+     {
+      "count": 400,
+      "dimensions": {
+       "clientRequestPath": "/news/a3"
+      }
+     },
+     {
+      "count": 60,
+      "dimensions": {
+       "clientRequestPath": "/news/a4"
+      }
+     },
+     {
+      "count": 12,
+      "dimensions": {
+       "clientRequestPath": "/news/tiny"
+      }
+     }
+    ],
+    "previous": [
+     {
+      "count": 1000,
+      "dimensions": {
+       "clientRequestPath": "/news/a1"
+      }
+     },
+     {
+      "count": 1400,
+      "dimensions": {
+       "clientRequestPath": "/news/a2"
+      }
+     },
+     {
+      "count": 390,
+      "dimensions": {
+       "clientRequestPath": "/news/a3"
+      }
+     },
+     {
+      "count": 500,
+      "dimensions": {
+       "clientRequestPath": "/news/gone"
+      }
+     }
+    ]
+   }
+  },
+  "sources": {
+   "ok": true,
+   "zone": {
+    "groups": [
+     {
+      "sum": {
+       "visits": 1200
+      },
+      "dimensions": {
+       "clientRefererHost": "www.google.com"
+      }
+     },
+     {
+      "sum": {
+       "visits": 300
+      },
+      "dimensions": {
+       "clientRefererHost": "www.google.com.sa"
+      }
+     },
+     {
+      "sum": {
+       "visits": 900
+      },
+      "dimensions": {
+       "clientRefererHost": ""
+      }
+     },
+     {
+      "sum": {
+       "visits": 500
+      },
+      "dimensions": {
+       "clientRefererHost": "t.co"
+      }
+     },
+     {
+      "sum": {
+       "visits": 120
+      },
+      "dimensions": {
+       "clientRefererHost": "pinterest.com"
+      }
+     },
+     {
+      "sum": {
+       "visits": 80
+      },
+      "dimensions": {
+       "clientRefererHost": "www.netflix.com"
+      }
+     },
+     {
+      "sum": {
+       "visits": 60
+      },
+      "dimensions": {
+       "clientRefererHost": "scopes.example"
+      }
+     }
+    ]
+   }
+  },
+  "countries": {
+   "ok": true,
+   "zone": {
+    "groups": [
+     {
+      "count": 3800,
+      "dimensions": {
+       "clientCountryName": "SA"
+      }
+     },
+     {
+      "count": 2200,
+      "dimensions": {
+       "clientCountryName": "EG"
+      }
+     },
+     {
+      "count": 900,
+      "dimensions": {
+       "clientCountryName": "XX"
+      }
+     },
+     {
+      "count": 700,
+      "dimensions": {
+       "clientCountryName": "T1"
+      }
+     }
+    ]
+   }
+  },
+  "devices": {
+   "ok": true,
+   "zone": {
+    "groups": [
+     {
+      "count": 7600,
+      "dimensions": {
+       "clientDeviceType": "mobile"
+      }
+     },
+     {
+      "count": 2000,
+      "dimensions": {
+       "clientDeviceType": "desktop"
+      }
+     },
+     {
+      "count": 380,
+      "dimensions": {
+       "clientDeviceType": "tablet"
+      }
+     }
+    ]
+   }
+  },
+  "delivery": {
+   "ok": true,
+   "zone": {
+    "groups": [
+     {
+      "count": 60000,
+      "sum": {
+       "edgeResponseBytes": 900000000
+      },
+      "dimensions": {
+       "cacheStatus": "hit"
+      }
+     },
+     {
+      "count": 25000,
+      "sum": {
+       "edgeResponseBytes": 700000000
+      },
+      "dimensions": {
+       "cacheStatus": "dynamic"
+      }
+     },
+     {
+      "count": 9000,
+      "sum": {
+       "edgeResponseBytes": 150000000
+      },
+      "dimensions": {
+       "cacheStatus": "miss"
+      }
+     },
+     {
+      "count": 4000,
+      "sum": {
+       "edgeResponseBytes": 60000000
+      },
+      "dimensions": {
+       "cacheStatus": "stale"
+      }
+     },
+     {
+      "count": 2000,
+      "sum": {
+       "edgeResponseBytes": 5000000
+      },
+      "dimensions": {
+       "cacheStatus": "revalidated"
+      }
+     }
+    ]
+   }
+  }
+ }
+}
