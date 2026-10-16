@@ -77,7 +77,7 @@ export async function generateSemanticId({
   text,
   prefix,
   env,
-  maxLength = 48,
+  maxLength = 80,
 }: SemanticIdOptions): Promise<string> {
   const cleanText = (text || '').trim();
   const suffix = randomSuffix(4);
@@ -97,14 +97,14 @@ export async function generateSemanticId({
           {
             role: 'system',
             content:
-              'You are a translator that translates Arabic news headlines into a concise English URL slug of 3 to 5 words separated by hyphens. Output ONLY the lowercase translated words separated by hyphens. Never output explanations, quotes, punctuation, or markdown.',
+              'You are a translator that translates Arabic news headlines into a concise English URL slug of 3 to 7 words separated by hyphens. Output ONLY the lowercase translated words separated by hyphens. Never output explanations, quotes, punctuation, or markdown.',
           },
           {
             role: 'user',
             content: `Headline: ${cleanText.slice(0, 200)}`,
           },
         ],
-        max_tokens: 35,
+        max_tokens: 60,
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
