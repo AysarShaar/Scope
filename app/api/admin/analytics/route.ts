@@ -122,6 +122,7 @@ async function attachArticleMeta(
           categorySlug: articles.categorySlug,
           imageUrl: articles.imageUrl,
           date: articles.date,
+          createdAt: articles.createdAt,
           authorName: articles.authorName,
         })
         .from(articles)

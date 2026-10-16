@@ -386,6 +386,7 @@ export interface ArticleMeta {
   categorySlug: string | null;
   imageUrl: string | null;
   date: string | null;
+  createdAt?: string | null;
   authorName: string | null;
 }
 export type ArticleRowWithMeta = ArticleRow & { path: string; meta: ArticleMeta | null };
