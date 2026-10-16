@@ -25,25 +25,15 @@ import type {
   Delta,
   Section,
   Shares,
-  SourceCategory,
 } from '@/lib/analyticsMetrics';
 
 type TimeRange = 'today' | '7d' | '30d';
-type ArticleFilter = 'all' | 'rising' | 'fading';
 
 const TIME_RANGES: Array<{ id: TimeRange; label: string }> = [
   { id: 'today', label: 'اليوم (آخر 24 ساعة)' },
   { id: '7d', label: 'آخر 7 أيام' },
   { id: '30d', label: 'آخر 30 يوماً' },
 ];
-
-const CATEGORY_LABEL: Record<SourceCategory, string> = {
-  search: 'محرك بحث',
-  social: 'منصة اجتماعية',
-  direct: 'مباشر (بدون وسيط)',
-  internal: 'داخلي (الموقع)',
-  referral: 'موقع إخباري/آخر',
-};
 
 const CARD =
   'bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xs';
@@ -253,7 +243,6 @@ export default function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>(
     urlRange && ['today', '7d', '30d'].includes(urlRange) ? urlRange : 'today'
   );
-  const [articleFilter, setArticleFilter] = useState<ArticleFilter>('all');
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -300,27 +289,11 @@ export default function AnalyticsDashboard() {
   const notConfigured = data !== null && !data.configured;
   const showSections = !notConfigured;
 
-  // Filtered Articles
-  const allArticles = useMemo(() => {
-    return s?.articles.status === 'ok' ? s.articles.data.rows : [];
+  // Filtered Articles: limited strictly to top 10 articles
+  const top10Articles = useMemo(() => {
+    const rows = s?.articles.status === 'ok' ? s.articles.data.rows : [];
+    return rows.filter((r) => r.views > 0).slice(0, 10);
   }, [s?.articles]);
-
-  const visibleArticles = useMemo(() => {
-    if (articleFilter === 'rising') {
-      return allArticles
-        .filter((r) => r.trend === 'rising' || r.trend === 'new')
-        .sort((a, b) => b.views - b.prevViews - (a.views - a.prevViews));
-    }
-    if (articleFilter === 'fading') {
-      return allArticles
-        .filter((r) => r.trend === 'fading')
-        .sort((a, b) => a.views - a.prevViews - (b.views - b.prevViews));
-    }
-    return allArticles.filter((r) => r.views > 0);
-  }, [allArticles, articleFilter]);
-
-  const risingCount = allArticles.filter((r) => r.trend === 'rising' || r.trend === 'new').length;
-  const fadingCount = allArticles.filter((r) => r.trend === 'fading').length;
 
   // Calculate proportional estimated readers (القرّاء)
   const readersRatio = useMemo(() => {
@@ -380,7 +353,7 @@ export default function AnalyticsDashboard() {
           </h1>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             {data
-              ? `${formatStamp(data.window.since)} ← ${formatStamp(data.window.until)} · مقارنة بالفترة السابقة المماثلة`
+              ? `${formatStamp(data.window.since)} ← ${formatStamp(data.window.until)}`
               : 'جارٍ التحميل…'}
           </p>
         </div>
@@ -453,7 +426,6 @@ export default function AnalyticsDashboard() {
             {/* مربع 1: الزيارات وحركة المرور */}
             <Card
               title="حركة المرور والزيارات"
-              subtitle="مشاهدات الصفحات، إجمالي الزيارات ومعدل التفاعل"
               icon={Activity}
             >
               {loading && !overview ? (
@@ -470,7 +442,7 @@ export default function AnalyticsDashboard() {
                     {/* مشاهدات الصفحات */}
                     <div className="space-y-1">
                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        مشاهدات الصفحات (Pageviews)
+                        مشاهدات الصفحات
                       </span>
                       <div className="flex items-baseline gap-2">
                         <span dir="ltr" className="text-2xl sm:text-3xl font-black font-mono tabular-nums text-slate-900 dark:text-white">
@@ -484,7 +456,7 @@ export default function AnalyticsDashboard() {
                     {/* إجمالي الزيارات */}
                     <div className="space-y-1">
                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        إجمالي الزيارات (Visits)
+                        إجمالي الزيارات
                       </span>
                       <div className="flex items-baseline gap-2">
                         <span dir="ltr" className="text-2xl sm:text-3xl font-black font-mono tabular-nums text-slate-900 dark:text-white">
@@ -515,7 +487,6 @@ export default function AnalyticsDashboard() {
             {/* مربع 2: التخزين المؤقت والأداء (الكاش) */}
             <Card
               title="التخزين المؤقت وتوصيل البيانات"
-              subtitle="كفاءة التخزين المؤقت وحجم البيانات عبر شبكة Cloudflare"
               icon={Zap}
             >
               {loading && !delivery ? (
@@ -532,7 +503,7 @@ export default function AnalyticsDashboard() {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        نسبة الإصابة حسب الطلبات (Hit Ratio)
+                        نسبة الإصابة حسب الطلبات
                       </span>
                       <span dir="ltr" className="font-mono tabular-nums font-black text-slate-900 dark:text-white text-sm">
                         {delivery.requests.percent === null ? '—' : `${delivery.requests.percent}%`}
@@ -550,7 +521,7 @@ export default function AnalyticsDashboard() {
                   <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        نسبة الإصابة حسب الحجم (Bandwidth)
+                        نسبة الإصابة حسب الحجم
                       </span>
                       <span dir="ltr" className="font-mono tabular-nums font-bold text-slate-900 dark:text-white">
                         {delivery.bytes.percent === null ? '—' : `${delivery.bytes.percent}%`}
@@ -588,45 +559,18 @@ export default function AnalyticsDashboard() {
           </div>
 
           {/* ══════════════════════════════════════════════════════════════════════════
-              القسم 2: المقالات (تصميم صفحة المقالات مع عدد المشاهدات والقراء وعين المنشور)
+              القسم 2: المقالات (تصميم صفحة المقالات مع عدد المشاهدات والقراء وعين المنشور - 10 مقالات)
               ══════════════════════════════════════════════════════════════════════════ */}
           <Card
             title="المقالات الأكثر قراءة"
-            subtitle="الأعلى مشاهدةً وتفاعلاً، مع رصد المقالات الصاعدة والمتراجعة"
             icon={Compass}
-            badge={
-              <div className="flex items-center gap-1.5">
-                {(
-                  [
-                    { id: 'all', label: 'الكل' },
-                    { id: 'rising', label: `يصعد (${risingCount})` },
-                    { id: 'fading', label: `يتراجع (${fadingCount})` },
-                  ] as Array<{ id: ArticleFilter; label: string }>
-                ).map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setArticleFilter(f.id)}
-                    aria-pressed={articleFilter === f.id}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap border cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-[#A42424] focus-visible:outline-none ${
-                      articleFilter === f.id
-                        ? 'border-[#A42424] text-[#A42424] dark:border-rose-500 dark:text-rose-300 bg-rose-50/70 dark:bg-rose-950/30'
-                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            }
           >
             <CardBody section={s?.articles} loading={loading} rows={5}>
-              {(d) => {
-                if (visibleArticles.length === 0) {
+              {() => {
+                if (top10Articles.length === 0) {
                   return (
                     <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
-                      {articleFilter === 'all'
-                        ? 'لا توجد مشاهدات لمقالات مسجلة في هذه الفترة الزمنية.'
-                        : 'لا توجد مقالات تطابق هذا الفلتر حالياً.'}
+                      لا توجد مشاهدات لمقالات مسجلة في هذه الفترة الزمنية.
                     </div>
                   );
                 }
@@ -647,7 +591,7 @@ export default function AnalyticsDashboard() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                          {visibleArticles.map((art: ArticleRowWithMeta, idx: number) => {
+                          {top10Articles.map((art: ArticleRowWithMeta, idx: number) => {
                             const { dateAr, timeStr } = formatArticleArabicDate(
                               art.meta?.createdAt || undefined,
                               art.meta?.date || undefined
@@ -762,7 +706,7 @@ export default function AnalyticsDashboard() {
 
                     {/* Mobile Card List View matching ArticlesList */}
                     <ul className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800/70">
-                      {visibleArticles.map((art: ArticleRowWithMeta, idx: number) => {
+                      {top10Articles.map((art: ArticleRowWithMeta, idx: number) => {
                         const { dateAr } = formatArticleArabicDate(
                           art.meta?.createdAt || undefined,
                           art.meta?.date || undefined
@@ -836,12 +780,6 @@ export default function AnalyticsDashboard() {
                         );
                       })}
                     </ul>
-
-                    {d.truncated && (
-                      <p className="px-5 py-3 text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800/80">
-                        تقتصر القائمة على أكثر 40 مقالاً قراءةً خلال هذه الفترة الزمنية.
-                      </p>
-                    )}
                   </>
                 );
               }}
@@ -849,17 +787,11 @@ export default function AnalyticsDashboard() {
           </Card>
 
           {/* ══════════════════════════════════════════════════════════════════════════
-              القسم 3: التوزيع الجغرافي (خريطة العالم مثل كلاودفلير وتحتها قائمة الدول تنازلياً)
+              القسم 3: Geography (خريطة العالم وتحتها قائمة الدول تنازلياً)
               ══════════════════════════════════════════════════════════════════════════ */}
           <Card
-            title="التوزيع الجغرافي للجمهور (Geography)"
-            subtitle="خريطة تفاعلية للمشاهدات حول العالم وقائمة الدول مرتبة تنازلياً"
+            title="Geography"
             icon={Globe}
-            badge={
-              <span className="text-xs font-mono tabular-nums font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                {countryRows.length} دولة نشطة
-              </span>
-            }
           >
             <CardBody section={s?.countries} loading={loading} rows={6}>
               {() => {
@@ -874,102 +806,89 @@ export default function AnalyticsDashboard() {
                 return (
                   <div className="p-4 sm:p-5 space-y-6">
                     {/* World Map Component */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 px-1">
-                        <span className="font-semibold">خريطة المشاهدات التفاعلية:</span>
-                        <span className="text-[11px] text-slate-400">حرّك المؤشر فوق الدولة لرؤية التفاصيل</span>
-                      </div>
-                      <WorldMap
-                        countries={countryRows}
-                        activeCode={selectedCountryCode}
-                        onSelectCountry={(code) => setSelectedCountryCode(code)}
-                      />
-                    </div>
+                    <WorldMap
+                      countries={countryRows}
+                      activeCode={selectedCountryCode}
+                      onSelectCountry={(code) => setSelectedCountryCode(code)}
+                    />
 
                     {/* Descending Countries List directly underneath */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
-                      <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 font-bold px-1">
-                        <span>قائمة الدول (ترتيب تنازلي حسب المشاهدات):</span>
-                        <span className="text-[11px] font-normal text-slate-400">النسبة من إجمالي المشاهدات</span>
-                      </div>
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                      {countryRows.map((country, idx) => {
+                        const isSelected = selectedCountryCode?.toUpperCase() === country.code.toUpperCase();
 
-                      <div className="space-y-2">
-                        {countryRows.map((country, idx) => {
-                          const isSelected = selectedCountryCode?.toUpperCase() === country.code.toUpperCase();
-
-                          return (
-                            <div
-                              key={country.code + idx}
-                              onClick={() => setSelectedCountryCode(isSelected ? null : country.code)}
-                              className={`p-3 rounded-xl transition-all border cursor-pointer ${
-                                isSelected
-                                  ? 'bg-rose-50/70 dark:bg-rose-950/30 border-[#A42424] dark:border-rose-500 shadow-2xs'
-                                  : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30 border-transparent hover:border-slate-200/60 dark:hover:border-slate-800/60'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-2.5">
-                                  <span className="font-mono tabular-nums text-xs font-bold text-slate-400 w-5 text-center shrink-0">
-                                    {idx < 9 ? `0${idx + 1}` : idx + 1}
-                                  </span>
-                                  <span className="text-xl leading-none">{country.flag}</span>
-                                  <span className="font-bold text-slate-900 dark:text-slate-100 text-[13px]">
-                                    {country.nameAr}
-                                  </span>
-                                  <span className="text-xs font-mono text-slate-400" dir="ltr">
-                                    ({country.code})
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                  <span className="font-mono tabular-nums font-bold text-slate-900 dark:text-white text-sm">
-                                    {country.count.toLocaleString()}{' '}
-                                    <span className="text-xs font-normal text-slate-400 font-sans">مشاهدة</span>
-                                  </span>
-                                  <span
-                                    className="font-mono tabular-nums text-xs font-bold text-slate-600 dark:text-slate-300 w-12 text-left"
-                                    dir="ltr"
-                                  >
-                                    {country.percentage}%
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="mt-2 w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mr-7">
-                                <div
-                                  className="h-full bg-[#A42424] dark:bg-rose-500 rounded-full transition-all duration-500"
-                                  style={{ width: `${Math.min(100, Math.max(1, country.percentage))}%` }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {/* Other countries row if present */}
-                        {otherCountries && (
-                          <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60">
+                        return (
+                          <div
+                            key={country.code + idx}
+                            onClick={() => setSelectedCountryCode(isSelected ? null : country.code)}
+                            className={`p-3 rounded-xl transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-rose-50/70 dark:bg-rose-950/30 border-[#A42424] dark:border-rose-500 shadow-2xs'
+                                : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30 border-transparent hover:border-slate-200/60 dark:hover:border-slate-800/60'
+                            }`}
+                          >
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-slate-500 dark:text-slate-400 font-medium">
-                                دول أخرى (خارج القائمة المباشرة)
-                              </span>
-                              <div className="flex items-center gap-3">
-                                <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400 text-sm">
-                                  {otherCountries.value.toLocaleString()} مشاهدة
+                              <div className="flex items-center gap-2.5">
+                                <span className="font-mono tabular-nums text-xs font-bold text-slate-400 w-5 text-center shrink-0">
+                                  {idx < 9 ? `0${idx + 1}` : idx + 1}
                                 </span>
-                                <span className="font-mono tabular-nums text-xs text-slate-400 w-12 text-left" dir="ltr">
-                                  {otherCountries.percentage}%
+                                <span className="text-xl leading-none">{country.flag}</span>
+                                <span className="font-bold text-slate-900 dark:text-slate-100 text-[13px]">
+                                  {country.nameAr}
+                                </span>
+                                <span className="text-xs font-mono text-slate-400" dir="ltr">
+                                  ({country.code})
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <span className="font-mono tabular-nums font-bold text-slate-900 dark:text-white text-sm">
+                                  {country.count.toLocaleString()}{' '}
+                                  <span className="text-xs font-normal text-slate-400 font-sans">مشاهدة</span>
+                                </span>
+                                <span
+                                  className="font-mono tabular-nums text-xs font-bold text-slate-600 dark:text-slate-300 w-12 text-left"
+                                  dir="ltr"
+                                >
+                                  {country.percentage}%
                                 </span>
                               </div>
                             </div>
-                            <div className="mt-2 w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+
+                            <div className="mt-2 w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mr-7">
                               <div
-                                className="h-full bg-slate-300 dark:bg-slate-600 rounded-full"
-                                style={{ width: `${Math.min(100, Math.max(1, otherCountries.percentage))}%` }}
+                                className="h-full bg-[#A42424] dark:bg-rose-500 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min(100, Math.max(1, country.percentage))}%` }}
                               />
                             </div>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
+
+                      {/* Other countries row if present */}
+                      {otherCountries && (
+                        <div className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">
+                              دول أخرى (خارج القائمة المباشرة)
+                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400 text-sm">
+                                {otherCountries.value.toLocaleString()} مشاهدة
+                              </span>
+                              <span className="font-mono tabular-nums text-xs text-slate-400 w-12 text-left" dir="ltr">
+                                {otherCountries.percentage}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mt-2 w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-slate-300 dark:bg-slate-600 rounded-full"
+                              style={{ width: `${Math.min(100, Math.max(1, otherCountries.percentage))}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -978,36 +897,17 @@ export default function AnalyticsDashboard() {
           </Card>
 
           {/* ══════════════════════════════════════════════════════════════════════════
-              القسم 4: مصادر القراء وتوزيع الأجهزة
+              القسم 4: أجهزة المستخدمين
               ══════════════════════════════════════════════════════════════════════════ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* مصادر القراء */}
-            <Card
-              title="مصادر حركة المرور"
-              subtitle="من أين تبدأ الزيارات — النسبة من إجمالي الزيارات"
-              icon={Compass}
-            >
-              <CardBody section={s?.sources} loading={loading}>
-                {(d) => (
-                  <ShareList
-                    rows={toRows(d, (i) => ({ key: i.key, label: i.labelAr, badge: CATEGORY_LABEL[i.category] }))}
-                    other={d.other}
-                  />
-                )}
-              </CardBody>
-            </Card>
-
-            {/* أجهزة المستخدمين */}
-            <Card
-              title="أجهزة الزوار"
-              subtitle="توزيع الأجهزة المستخدمة — النسبة من المشاهدات"
-              icon={Smartphone}
-            >
-              <CardBody section={s?.devices} loading={loading} rows={3}>
-                {(d) => <ShareList rows={toRows(d, (i) => ({ key: i.type, label: i.labelAr }))} other={d.other} />}
-              </CardBody>
-            </Card>
-          </div>
+          <Card
+            title="أجهزة الزوار"
+            subtitle="توزيع الأجهزة المستخدمة — النسبة من المشاهدات"
+            icon={Smartphone}
+          >
+            <CardBody section={s?.devices} loading={loading} rows={3}>
+              {(d) => <ShareList rows={toRows(d, (i) => ({ key: i.type, label: i.labelAr }))} other={d.other} />}
+            </CardBody>
+          </Card>
         </>
       )}
     </div>
