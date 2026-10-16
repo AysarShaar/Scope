@@ -729,6 +729,7 @@ export default function ArticlesList({
                       <td className="px-4 py-3.5">
                         <div className="flex items-start gap-3">
                           {art.imageUrl && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               src={art.imageUrl}
                               alt=""
@@ -858,6 +859,7 @@ export default function ArticlesList({
                 <li key={art.id} className="p-3.5">
                   <div className="flex gap-3">
                     {art.imageUrl && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={art.imageUrl}
                         alt=""

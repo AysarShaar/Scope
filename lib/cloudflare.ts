@@ -26,7 +26,6 @@ export function getCloudflareEnv(): CloudflareEnv | null {
   if (process.env.NODE_ENV !== "production") {
     try {
       // Dynamic import keeps this module out of the production bundle entirely.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { getLocalD1Adapter } = require("./localD1Adapter") as typeof import("./localD1Adapter");
       const adapter = getLocalD1Adapter();
       if (adapter) {

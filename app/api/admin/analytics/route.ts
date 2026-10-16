@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
       diagnostics,
       window: win,
       generatedAt: new Date().toISOString(),
-      sections: { ...built, articles: built.articles },
+      sections: { ...built, articles: await attachArticleMeta(env, built.articles) },
     };
     return NextResponse.json(body, noStore);
   }

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Cairo } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -16,13 +16,19 @@ const cairo = Cairo({
 
 const siteUrl = getSiteUrl();
 
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'SCOPE MEDIA | سكوب ميديا - ما وراء العناوين',
+    default: 'سكوب ميديا || SCOPE MEDIA',
     template: '%s | SCOPE MEDIA',
   },
-  description: 'منصة إعلامية رقمية متكاملة - BEYOND THE HEADLINES - تغطيات حية، تحقيقات استقصائية، وبرامج حصرية على مدار الساعة.',
+  description: 'منصة سكوب ميديا (SCOPE MEDIA) الإعلامية الرقمية: تغطيات إخبارية حية، تحقيقات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
   keywords: [
     'سكوب ميديا',
     'SCOPE MEDIA',
@@ -35,18 +41,27 @@ export const metadata: Metadata = {
   ],
   // No site-wide canonical here: a canonical set in the root layout is inherited by every page that
   // doesn't override it, which would tell Google that /category/*, /programs, ... all duplicate the home page.
-  applicationName: 'سكوب ميديا Scope Media',
+  applicationName: 'سكوب ميديا || SCOPE MEDIA',
   formatDetection: { telephone: false, email: false, address: false },
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
+    'max-image-preview': 'large',
+    'max-snippet': -1,
+    'max-video-preview': -1,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
   openGraph: {
-    title: 'SCOPE MEDIA | سكوب ميديا - ما وراء العناوين',
-    description: 'منصة إعلامية رقمية متكاملة - BEYOND THE HEADLINES - تغطيات حية، تحقيقات استقصائية، وبرامج حصرية على مدار الساعة.',
+    title: 'سكوب ميديا || SCOPE MEDIA',
+    description: 'منصة إعلامية رقمية متكاملة تقدم تغطيات ميدانية حية، ملفات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
     url: siteUrl,
-    siteName: 'سكوب ميديا Scope Media',
+    siteName: 'سكوب ميديا || SCOPE MEDIA',
     locale: 'ar_AR',
     type: 'website',
     images: [
@@ -55,15 +70,20 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         type: 'image/png',
-        alt: 'SCOPE MEDIA | سكوب ميديا',
+        alt: 'شعار منصة سكوب ميديا الإعلامية الرقمية',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SCOPE MEDIA | سكوب ميديا - ما وراء العناوين',
-    description: 'منصة إعلامية رقمية متكاملة - BEYOND THE HEADLINES - تغطيات حية، تحقيقات استقصائية، وبرامج حصرية على مدار الساعة.',
-    images: ['/og-default.png'],
+    title: 'سكوب ميديا || SCOPE MEDIA',
+    description: 'منصة إعلامية رقمية متكاملة: تغطيات حية، تحقيقات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
+    images: [
+      {
+        url: '/og-default.png',
+        alt: 'شعار منصة سكوب ميديا الإعلامية الرقمية',
+      },
+    ],
   },
   icons: {
     icon: [
@@ -117,28 +137,27 @@ export default function RootLayout({
                 {
                   '@type': 'NewsMediaOrganization',
                   '@id': `${siteUrl}/#organization`,
-                  name: 'SCOPE MEDIA | سكوب ميديا',
-                  alternateName: 'سكوب ميديا',
-                  url: siteUrl,
+                  name: 'سكوب ميديا',
+                  alternateName: 'SCOPE MEDIA',
+                  url: `${siteUrl}/`,
+                  description: 'منصة إعلامية رقمية متكاملة تقدم تغطيات حية، تحقيقات استقصائية، وبرامج حصرية على مدار الساعة.',
                   logo: {
                     '@type': 'ImageObject',
-                    url: `${siteUrl}/logo-512.png`,
-                    width: 512,
-                    height: 512,
+                    url: `${siteUrl}/og-default.png`,
+                    width: 1200,
+                    height: 630,
                   },
                   sameAs: [
-                    'https://x.com/scopemedia',
                     FACEBOOK_URL,
                     INSTAGRAM_URL,
-                    'https://youtube.com/@scopemedia',
                   ],
                 },
                 {
                   '@type': 'WebSite',
                   '@id': `${siteUrl}/#website`,
-                  url: siteUrl,
-                  name: 'سكوب ميديا Scope Media',
-                  alternateName: ['سكوب ميديا', 'Scope Media', 'SCOPE MEDIA'],
+                  url: `${siteUrl}/`,
+                  name: 'سكوب ميديا || SCOPE MEDIA',
+                  alternateName: ['سكوب ميديا', 'SCOPE MEDIA'],
                   inLanguage: 'ar',
                   publisher: {
                     '@id': `${siteUrl}/#organization`,

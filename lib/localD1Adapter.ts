@@ -50,9 +50,7 @@ function resolveDbPath(): string {
 
 let _adapter: LocalD1DatabaseLike | null = null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createLocalD1Adapter(customDb?: any): LocalD1DatabaseLike {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let sqliteDb: any = customDb;
 
   if (!sqliteDb) {
@@ -61,10 +59,8 @@ export function createLocalD1Adapter(customDb?: any): LocalD1DatabaseLike {
       throw new Error(`[localD1Adapter] Database file not found at ${dbPath}`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let DatabaseSync: any;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       ({ DatabaseSync } = require("node:sqlite"));
     } catch {
       throw new Error("[localD1Adapter] node:sqlite module not available");

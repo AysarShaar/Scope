@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createLocalD1Adapter, LocalD1DatabaseLike } from './localD1Adapter';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
 const { DatabaseSync } = require('node:sqlite') as { DatabaseSync: any };
 
 describe('localD1Adapter', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let sqliteDb: any;
   let adapter: LocalD1DatabaseLike;
 
