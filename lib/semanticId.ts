@@ -90,9 +90,9 @@ export async function generateSemanticId({
   // 1. Try Cloudflare Workers AI if available
   if (env?.AI && typeof env.AI.run === 'function') {
     try {
-      // 2.5s timeout prevents blocking article creation if AI is slow
-      // Use Llama 3.2 3B for superior Arabic comprehension without example echoing
-      const aiPromise = env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
+      // 3.5s timeout prevents blocking article creation if AI is slow
+      // Use Llama 3.3 70B (FP8 Fast) for state-of-the-art Arabic translation and slug generation
+      const aiPromise = env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
         messages: [
           {
             role: 'system',
@@ -108,7 +108,7 @@ export async function generateSemanticId({
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AI inference timeout')), 2500)
+        setTimeout(() => reject(new Error('AI inference timeout')), 3500)
       );
 
       const res = (await Promise.race([aiPromise, timeoutPromise])) as { response?: string };
