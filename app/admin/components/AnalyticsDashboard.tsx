@@ -13,12 +13,14 @@ import {
   Activity,
   Zap,
   Globe,
+  Cloud,
   Smartphone,
   Compass,
 } from 'lucide-react';
 import { useAdmin } from './AdminShell';
 import { formatArticleArabicDate } from './ArticlesList';
 import WorldMap, { type WorldMapCountry } from './WorldMap';
+import CloudflareAnalyticsDashboard from './CloudflareAnalyticsDashboard';
 import type {
   AnalyticsResponse,
   ArticleRowWithMeta,
@@ -240,6 +242,10 @@ export default function AnalyticsDashboard() {
   const { userRole } = useAdmin();
 
   const urlRange = searchParams.get('range') as TimeRange | null;
+  const urlView = searchParams.get('view') as 'website' | 'cloudflare' | null;
+  const [activeView, setActiveView] = useState<'website' | 'cloudflare'>(
+    urlView === 'cloudflare' ? 'cloudflare' : 'website'
+  );
   const [timeRange, setTimeRange] = useState<TimeRange>(
     urlRange && ['today', '7d', '30d'].includes(urlRange) ? urlRange : 'today'
   );
@@ -248,6 +254,16 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const requestId = useRef(0);
+
+  const handleViewChange = useCallback(
+    (view: 'website' | 'cloudflare') => {
+      setActiveView(view);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('view', view);
+      router.replace(`?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
 
   const handleTimeRangeChange = useCallback(
     (range: TimeRange) => {
@@ -346,19 +362,58 @@ export default function AnalyticsDashboard() {
   return (
     <div className="space-y-6 select-none max-w-6xl w-full mx-auto" dir="rtl">
       {/* Top Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
             لوحة المؤشرات والتحليلات
           </h1>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-            {data
+            {activeView === 'website' && data
               ? `${formatStamp(data.window.since)} ← ${formatStamp(data.window.until)}`
+              : activeView === 'cloudflare'
+              ? 'مؤشرات Workers و R2 Storage عبر Cloudflare API'
               : 'جارٍ التحميل…'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Switcher Button: website / cloudflare */}
+          <div
+            role="tablist"
+            aria-label="نوع التحليلات"
+            className="inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeView === 'website'}
+              onClick={() => handleViewChange('website')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
+                activeView === 'website'
+                  ? 'bg-white dark:bg-slate-800 text-[#0F4468] dark:text-sky-300 shadow-2xs font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>website</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeView === 'cloudflare'}
+              onClick={() => handleViewChange('cloudflare')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
+                activeView === 'cloudflare'
+                  ? 'bg-white dark:bg-slate-800 text-[#0F4468] dark:text-sky-300 shadow-2xs font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              <span>cloudflare</span>
+            </button>
+          </div>
+
+          {/* Time range selector */}
           <div
             role="group"
             aria-label="الفترة الزمنية"
@@ -371,7 +426,7 @@ export default function AnalyticsDashboard() {
                   key={range.id}
                   onClick={() => handleTimeRangeChange(range.id)}
                   aria-pressed={selected}
-                  className={`px-3 py-1.5 rounded-lg text-xs transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#A42424] focus-visible:outline-none ${
+                  className={`px-3 py-1.5 rounded-lg text-xs transition-all duration-150 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#0F4468] focus-visible:outline-none ${
                     selected
                       ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold shadow-2xs'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -383,39 +438,45 @@ export default function AnalyticsDashboard() {
             })}
           </div>
 
-          <button
-            onClick={fetchAnalytics}
-            disabled={loading}
-            aria-label="تحديث البيانات"
-            title="تحديث البيانات"
-            className="p-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[#A42424] focus-visible:outline-none"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#A42424]' : ''}`} />
-          </button>
+          {activeView === 'website' && (
+            <button
+              onClick={fetchAnalytics}
+              disabled={loading}
+              aria-label="تحديث البيانات"
+              title="تحديث البيانات"
+              className="p-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[#0F4468] focus-visible:outline-none"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#0F4468]' : ''}`} />
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Errors and unconfigured alerts */}
-      {fetchError && (
-        <div role="alert" className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-xs text-rose-800 dark:text-rose-300">
-          تعذر تحديث البيانات: {fetchError}
-          {data ? ' — البيانات المعروضة أدناه من آخر تحميل ناجح.' : ''}
-        </div>
-      )}
-
-      {notConfigured && (
-        <div role="status" className={`${CARD} p-5`}>
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Cloudflare غير مربوط بعد</h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            لا تُعرض أي بيانات أو تقديرات وهمية. اربط الحساب عبر مفاتيح API لتظهر المقاييس الحقيقية.
-          </p>
-          {s?.overview.status === 'unavailable' && (
-            <p dir="ltr" className="mt-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 text-left break-words">
-              {s.overview.reason}
-            </p>
+      {activeView === 'cloudflare' ? (
+        <CloudflareAnalyticsDashboard timeRange={timeRange} />
+      ) : (
+        <>
+          {/* Errors and unconfigured alerts */}
+          {fetchError && (
+            <div role="alert" className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 text-xs text-rose-800 dark:text-rose-300">
+              تعذر تحديث البيانات: {fetchError}
+              {data ? ' — البيانات المعروضة أدناه من آخر تحميل ناجح.' : ''}
+            </div>
           )}
-        </div>
-      )}
+
+          {notConfigured && (
+            <div role="status" className={`${CARD} p-5`}>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Cloudflare غير مربوط بعد</h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                لا تُعرض أي بيانات أو تقديرات وهمية. اربط الحساب عبر مفاتيح API لتظهر المقاييس الحقيقية.
+              </p>
+              {s?.overview.status === 'unavailable' && (
+                <p dir="ltr" className="mt-2 text-[11px] font-mono text-slate-500 dark:text-slate-400 text-left break-words">
+                  {s.overview.reason}
+                </p>
+              )}
+            </div>
+          )}
 
       {showSections && (
         <>
@@ -904,6 +965,8 @@ export default function AnalyticsDashboard() {
               {(d) => <ShareList rows={toRows(d, (i) => ({ key: i.type, label: i.labelAr }))} other={d.other} />}
             </CardBody>
           </Card>
+        </>
+      )}
         </>
       )}
     </div>
