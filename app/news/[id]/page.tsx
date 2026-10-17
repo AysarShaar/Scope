@@ -56,7 +56,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       article.category,
       'SCOPE MEDIA',
       'سكوب ميديا',
-      'ما وراء العناوين',
       ...(article.subtitle ? [article.subtitle.slice(0, 40)] : []),
     ],
     alternates: {

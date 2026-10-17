@@ -62,7 +62,7 @@ export default function TermsOfUsePage() {
             </Link>
             <span className="text-slate-400">/</span>
             <span className="font-bold text-slate-900 dark:text-white">
-              {isAr ? 'شروط الاستخدام والنشر' : 'Terms of Use & Publishing'}
+              {isAr ? 'شروط الاستخدام' : 'Terms of Use'}
             </span>
           </div>
 
@@ -79,7 +79,7 @@ export default function TermsOfUsePage() {
           </span>
 
           <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            {isAr ? 'اتفاقية شروط الاستخدام وقواعد النشر' : 'Terms of Use & Editorial Publishing Agreement'}
+            {isAr ? 'شروط الاستخدام' : 'Terms of Use'}
           </h1>
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 pt-1">

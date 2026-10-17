@@ -126,7 +126,7 @@ describe('lib/seo', () => {
     it('provides sensible fallback for unknown categories', () => {
       const fb = getCategorySeo('unknown-slug', 1, 'تصنيف مجهول');
       expect(fb.title).toContain('تصنيف مجهول');
-      expect(fb.title).toContain(SITE_NAME);
+      expect(fb.title).toContain('آخر الأخبار والتقارير');
     });
   });
 

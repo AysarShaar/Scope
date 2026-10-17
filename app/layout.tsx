@@ -25,10 +25,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'سكوب ميديا || SCOPE MEDIA',
-    template: '%s | SCOPE MEDIA',
+    default: 'سكوب ميديا',
+    template: '%s',
   },
-  description: 'منصة سكوب ميديا (SCOPE MEDIA) الإعلامية الرقمية: تغطيات إخبارية حية، تحقيقات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
+  description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
   keywords: [
     'سكوب ميديا',
     'SCOPE MEDIA',
@@ -37,11 +37,10 @@ export const metadata: Metadata = {
     'اقتصاد وأعمال',
     'الشرق الأوسط',
     'تقارير حصرية',
-    'ما وراء العناوين',
   ],
   // No site-wide canonical here: a canonical set in the root layout is inherited by every page that
   // doesn't override it, which would tell Google that /category/*, /programs, ... all duplicate the home page.
-  applicationName: 'سكوب ميديا || SCOPE MEDIA',
+  applicationName: 'سكوب ميديا',
   formatDetection: { telephone: false, email: false, address: false },
   robots: {
     index: true,
@@ -58,10 +57,10 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'سكوب ميديا || SCOPE MEDIA',
-    description: 'منصة إعلامية رقمية متكاملة تقدم تغطيات ميدانية حية، ملفات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
+    title: 'سكوب ميديا',
+    description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     url: siteUrl,
-    siteName: 'سكوب ميديا || SCOPE MEDIA',
+    siteName: 'سكوب ميديا',
     locale: 'ar_AR',
     type: 'website',
     images: [
@@ -76,8 +75,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'سكوب ميديا || SCOPE MEDIA',
-    description: 'منصة إعلامية رقمية متكاملة: تغطيات حية، تحقيقات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
+    title: 'سكوب ميديا',
+    description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     images: [
       {
         url: '/og-default.png',

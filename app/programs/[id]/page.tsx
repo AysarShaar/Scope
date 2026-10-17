@@ -37,7 +37,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const showUrl = `${siteUrl}/programs/${program.id}${ep ? `?ep=${ep}` : ''}`;
   const title = activeEp
     ? `${activeEp.title} - ${program.title}`
-    : `${program.title} | برامج`;
+    : program.title;
   const description =
     activeEp?.description ||
     program.description ||

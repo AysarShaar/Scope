@@ -260,7 +260,7 @@ export const translations: Record<Language, Translations> = {
       aboutUs: 'عن SCOPE MEDIA',
       editorialBoard: 'هيئة التحرير والمجلس الاستشاري',
       privacy: 'سياسة الخصوصية وحماية البيانات',
-      terms: 'شروط الاستخدام والنشر',
+      terms: 'شروط الاستخدام',
       contact: 'تواصل مع غرفة الأخبار',
       adminPortal: 'بوابة إدارة التحرير',
       options: 'الخيارات والإعدادات',

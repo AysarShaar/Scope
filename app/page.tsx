@@ -10,8 +10,8 @@ export const revalidate = 120;
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
-  title: 'سكوب ميديا || SCOPE MEDIA',
-  description: 'منصة سكوب ميديا (SCOPE MEDIA) الإعلامية الرقمية: تغطيات إخبارية حية، تحقيقات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
+  title: 'سكوب ميديا',
+  description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
   alternates: {
     canonical: '/',
   },
@@ -30,10 +30,10 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'سكوب ميديا || SCOPE MEDIA',
-    description: 'منصة إعلامية رقمية متكاملة تقدم تغطيات ميدانية حية، ملفات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
+    title: 'سكوب ميديا',
+    description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     url: `${siteUrl}/`,
-    siteName: 'سكوب ميديا || SCOPE MEDIA',
+    siteName: 'سكوب ميديا',
     locale: 'ar_AR',
     type: 'website',
     images: [
@@ -49,8 +49,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'سكوب ميديا || SCOPE MEDIA',
-    description: 'منصة إعلامية رقمية متكاملة: تغطيات حية، تحقيقات استقصائية معمقة، وبرامج حصرية على مدار الساعة.',
+    title: 'سكوب ميديا',
+    description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     images: [
       {
         url: `${siteUrl}/og-default.png`,
