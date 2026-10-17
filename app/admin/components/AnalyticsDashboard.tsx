@@ -104,7 +104,7 @@ function Bar({ percentage, muted }: { percentage: number; muted?: boolean }) {
     <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" aria-hidden="true">
       <div
         className={`h-full rounded-full transition-all duration-500 ${
-          muted ? 'bg-slate-300 dark:bg-slate-600' : 'bg-[#A42424] dark:bg-rose-500'
+          muted ? 'bg-slate-300 dark:bg-slate-600' : 'bg-[#0F4468] dark:bg-sky-500'
         }`}
         style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
       />
@@ -823,25 +823,21 @@ export default function AnalyticsDashboard() {
                             onClick={() => setSelectedCountryCode(isSelected ? null : country.code)}
                             className={`p-3 rounded-xl transition-all border cursor-pointer ${
                               isSelected
-                                ? 'bg-rose-50/70 dark:bg-rose-950/30 border-[#A42424] dark:border-rose-500 shadow-2xs'
+                                ? 'bg-sky-50/70 dark:bg-sky-950/30 border-[#0F4468] dark:border-sky-500 shadow-2xs'
                                 : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30 border-transparent hover:border-slate-200/60 dark:hover:border-slate-800/60'
                             }`}
                           >
                             <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2.5">
-                                <span className="font-mono tabular-nums text-xs font-bold text-slate-400 w-5 text-center shrink-0">
-                                  {idx < 9 ? `0${idx + 1}` : idx + 1}
-                                </span>
-                                <span className="text-xl leading-none">{country.flag}</span>
-                                <span className="font-bold text-slate-900 dark:text-slate-100 text-[13px]">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-bold text-slate-900 dark:text-slate-100 text-[13px] truncate">
                                   {country.nameAr}
                                 </span>
-                                <span className="text-xs font-mono text-slate-400" dir="ltr">
+                                <span className="text-xs font-mono text-slate-400 shrink-0" dir="ltr">
                                   ({country.code})
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-3 shrink-0">
                                 <span className="font-mono tabular-nums font-bold text-slate-900 dark:text-white text-sm">
                                   {country.count.toLocaleString()}{' '}
                                   <span className="text-xs font-normal text-slate-400 font-sans">مشاهدة</span>
@@ -855,9 +851,9 @@ export default function AnalyticsDashboard() {
                               </div>
                             </div>
 
-                            <div className="mt-2 w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mr-7">
+                            <div className="mt-2 w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-[#A42424] dark:bg-rose-500 rounded-full transition-all duration-500"
+                                className="h-full bg-[#0F4468] dark:bg-sky-500 rounded-full transition-all duration-500"
                                 style={{ width: `${Math.min(100, Math.max(1, country.percentage))}%` }}
                               />
                             </div>

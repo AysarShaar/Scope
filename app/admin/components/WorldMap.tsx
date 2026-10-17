@@ -212,7 +212,7 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
             }}
             aria-label="إعادة ضبط التكبير"
             title="انقر نقراً مزدوجاً أو اضغط هنا لإعادة الضبط"
-            className="text-[10px] text-slate-400 hover:text-[#A42424] dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
+            className="text-[10px] text-slate-400 hover:text-[#0F4468] dark:hover:text-sky-400 flex items-center gap-1 cursor-pointer transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
             <span className="hidden sm:inline">إعادة ضبط</span>
@@ -232,12 +232,9 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
           onClick={(e) => e.stopPropagation()}
         >
           <div className="relative rounded-xl p-3 bg-white/95 dark:bg-[#0c121e]/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800/90 shadow-[0_10px_25px_-5px_rgba(15,23,42,0.12),0_4px_10px_rgba(15,23,42,0.04)] dark:shadow-[0_14px_30px_-6px_rgba(0,0,0,0.65)] animate-in fade-in zoom-in-95 duration-150">
-            {/* Header: Flag, Name, Code, Close button if pinned */}
+            {/* Header: Name, Code, Close button if pinned */}
             <div className="flex items-center justify-between gap-1.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-base leading-none shrink-0 drop-shadow-xs">
-                  {displayCountry.flag}
-                </span>
                 <span className="font-bold text-[13px] text-slate-900 dark:text-slate-100 truncate">
                   {displayCountry.nameAr}
                 </span>
@@ -280,7 +277,7 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
                 <span className="text-[10px] text-slate-400 font-sans">مشاهدة</span>
               </div>
               <span
-                className="font-mono tabular-nums font-bold text-[11px] px-2 py-0.5 rounded-full bg-rose-50 text-[#A42424] dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/60 shrink-0"
+                className="font-mono tabular-nums font-bold text-[11px] px-2 py-0.5 rounded-full bg-sky-50 text-[#0F4468] dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200/60 dark:border-sky-800/60 shrink-0"
                 dir="ltr"
               >
                 {displayCountry.percentage}%
@@ -342,25 +339,25 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
                   if (hasTraffic && country) {
                     const ratio = country.count / maxCount;
                     if (ratio > 0.6) {
-                      fillColor = '#881337'; // Deep Wine Crimson
-                      strokeColor = '#4c0519';
+                      fillColor = '#0F4468'; // Primary Deep Navy
+                      strokeColor = '#09283d';
                     } else if (ratio > 0.3) {
-                      fillColor = '#A42424'; // Brand Crimson
-                      strokeColor = '#7f1d1d';
+                      fillColor = '#1A5A85'; // Rich Brand Blue
+                      strokeColor = '#103d5c';
                     } else if (ratio > 0.1) {
-                      fillColor = '#e11d48'; // Rich Rose Red
-                      strokeColor = '#9f1239';
+                      fillColor = '#2979AD'; // Medium Blue
+                      strokeColor = '#1c577c';
                     } else {
-                      fillColor = '#fb7185'; // Soft Rose
-                      strokeColor = '#f43f5e';
+                      fillColor = '#60A5D6'; // Soft Sky Blue
+                      strokeColor = '#3b82b6';
                     }
                     strokeWidth = 0.5;
                   }
 
                   if (isSelected) {
-                    fillColor = '#991b1b';
-                    strokeColor = '#ffffff';
-                    strokeWidth = 1.2;
+                    fillColor = '#0c3652';
+                    strokeColor = '#38bdf8';
+                    strokeWidth = 1.3;
                   }
 
                   return (
@@ -401,10 +398,10 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
         <div className="flex items-center gap-2" dir="rtl">
           <span className="text-slate-400">منخفض</span>
           <div className="flex items-center gap-1" dir="ltr">
-            <span className="w-2.5 h-2.5 rounded-xs bg-[#881337] inline-block" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-[#A42424] inline-block" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-[#e11d48] inline-block" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-[#fb7185] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-xs bg-[#0F4468] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-xs bg-[#1A5A85] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-xs bg-[#2979AD] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-xs bg-[#60A5D6] inline-block" />
           </div>
           <span className="text-slate-400">مرتفع</span>
         </div>
