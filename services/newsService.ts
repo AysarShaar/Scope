@@ -52,6 +52,88 @@ let homeBootstrapPromise: Promise<HomeBootstrapData | null> | null = null;
 let homeBootstrapTimestamp = 0;
 const HOME_BOOTSTRAP_TTL_MS = 30000;
 
+export interface ArticleQueryOptions {
+  category?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  full?: boolean;
+  from?: string;
+  to?: string;
+  date?: string;
+  status?: string;
+  author?: string;
+  sort?: 'desc' | 'asc';
+  includePending?: boolean;
+}
+
+function buildArticleQueryParams(options: ArticleQueryOptions): URLSearchParams {
+  const page = Math.max(1, options.page || 1);
+  const limit = Math.min(1000, Math.max(1, options.limit || 12));
+  const params = new URLSearchParams();
+
+  if (options.category && options.category !== 'home' && options.category !== 'all') {
+    params.set('category', options.category);
+  }
+  if (options.search) params.set('search', options.search);
+  if (options.from) params.set('from', options.from);
+  if (options.to) params.set('to', options.to);
+  if (options.date) params.set('date', options.date);
+  if (options.status) params.set('status', options.status);
+  if (options.author) params.set('author', options.author);
+  if (options.sort) params.set('sort', options.sort);
+  if (options.includePending) params.set('includePending', 'true');
+  if (options.full) params.set('full', 'true');
+
+  params.set('page', page.toString());
+  params.set('limit', limit.toString());
+  return params;
+}
+
+interface RawPaginatedJson {
+  success?: boolean;
+  data?: ScopeArticle[];
+  pagination?: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+    hasMore?: boolean;
+  };
+}
+
+function parsePaginatedResponse(
+  json: RawPaginatedJson | null | undefined,
+  page: number,
+  limit: number
+): PaginatedArticlesResult | null {
+  if (!json?.success || !Array.isArray(json.data)) return null;
+
+  const pagination = json.pagination || {};
+  const total = pagination.total ?? json.data.length;
+  const totalPages = pagination.totalPages || Math.max(1, Math.ceil(total / limit));
+
+  return {
+    articles: json.data,
+    total,
+    page: pagination.page || page,
+    limit: pagination.limit || limit,
+    totalPages,
+    hasMore: pagination.hasMore ?? page < totalPages,
+  };
+}
+
+function createEmptyPaginatedResult(page: number, limit: number): PaginatedArticlesResult {
+  return {
+    articles: [],
+    total: 0,
+    page,
+    limit,
+    totalPages: 1,
+    hasMore: false,
+  };
+}
+
 const inFlightArticleRequests = new Map<string, Promise<PaginatedArticlesResult>>();
 
 export const newsService = {
@@ -59,44 +141,10 @@ export const newsService = {
     return true;
   },
 
-  async getArticlesPaginated(
-    options: {
-      category?: string;
-      search?: string;
-      page?: number;
-      limit?: number;
-      full?: boolean;
-      from?: string;
-      to?: string;
-      date?: string;
-      status?: string;
-      author?: string;
-      sort?: 'desc' | 'asc';
-      includePending?: boolean;
-    } = {},
-  ): Promise<PaginatedArticlesResult> {
-    const page = Math.max(1, options.page || 1);
-    const limit = Math.min(1000, Math.max(1, options.limit || 12));
-
-    const params = new URLSearchParams();
-    if (
-      options.category &&
-      options.category !== "home" &&
-      options.category !== "all"
-    ) {
-      params.set("category", options.category);
-    }
-    if (options.search) params.set("search", options.search);
-    if (options.from) params.set("from", options.from);
-    if (options.to) params.set("to", options.to);
-    if (options.date) params.set("date", options.date);
-    if (options.status) params.set("status", options.status);
-    if (options.author) params.set("author", options.author);
-    if (options.sort) params.set("sort", options.sort);
-    if (options.includePending) params.set("includePending", "true");
-    params.set("page", page.toString());
-    params.set("limit", limit.toString());
-    if (options.full) params.set("full", "true");
+  async getArticlesPaginated(options: ArticleQueryOptions = {}): Promise<PaginatedArticlesResult> {
+    const params = buildArticleQueryParams(options);
+    const page = Number(params.get('page')) || 1;
+    const limit = Number(params.get('limit')) || 12;
 
     const cacheKey = params.toString();
     const existingPromise = inFlightArticleRequests.get(cacheKey);
@@ -109,35 +157,14 @@ export const newsService = {
         const res = await fetchRead(`/api/articles?${cacheKey}`);
         if (res.ok) {
           const json = await res.json().catch(() => null);
-          if (json?.success && Array.isArray(json.data)) {
-            const pagination = json.pagination || {};
-            return {
-              articles: json.data,
-              total: pagination.total ?? json.data.length,
-              page: pagination.page || page,
-              limit: pagination.limit || limit,
-              totalPages:
-                pagination.totalPages ||
-                Math.max(
-                  1,
-                  Math.ceil((pagination.total || json.data.length) / limit),
-                ),
-              hasMore: pagination.hasMore ?? page < (pagination.totalPages || 1),
-            };
-          }
+          const parsed = parsePaginatedResponse(json, page, limit);
+          if (parsed) return parsed;
         }
       } catch (err) {
-        console.error("[newsService] getArticlesPaginated error:", err);
+        console.error('[newsService] getArticlesPaginated error:', err);
       }
 
-      return {
-        articles: [],
-        total: 0,
-        page,
-        limit,
-        totalPages: 1,
-        hasMore: false,
-      };
+      return createEmptyPaginatedResult(page, limit);
     })().finally(() => {
       inFlightArticleRequests.delete(cacheKey);
     });
