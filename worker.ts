@@ -72,15 +72,15 @@ function isKnownPath(pathname: string): boolean {
 /** Returns the cache lifetime (seconds) for a public path, or 0 when the path must not be cached. */
 function ttlForPath(pathname: string): number {
   if (STATIC_ASSETS.has(pathname)) return 604800; // 7 days in Edge Cache for static assets/favicons
-  if (pathname === '/') return 120;
-  if (pathname.startsWith('/news/')) return 120;
-  if (pathname.startsWith('/programs/')) return 120;
-  if (pathname === '/programs' || pathname === '/videos' || pathname === '/search') return 300;
-  if (pathname.startsWith('/category/')) return 120;
-  if (pathname === '/privacy' || pathname === '/terms') return 600;
-  if (pathname === '/sitemap.xml') return 600;
-  if (pathname === '/news-sitemap.xml') return 300;
-  if (pathname === '/robots.txt') return 3600;
+  if (pathname === '/') return 300; // 5 minutes
+  if (pathname.startsWith('/news/')) return 1800; // 30 minutes
+  if (pathname.startsWith('/programs/')) return 900; // 15 minutes
+  if (pathname === '/programs' || pathname === '/videos' || pathname === '/search') return 900; // 15 minutes
+  if (pathname.startsWith('/category/')) return 600; // 10 minutes
+  if (pathname === '/privacy' || pathname === '/terms') return 86400; // 24 hours
+  if (pathname === '/sitemap.xml') return 1800; // 30 minutes
+  if (pathname === '/news-sitemap.xml') return 600; // 10 minutes
+  if (pathname === '/robots.txt') return 86400; // 24 hours
   return 0;
 }
 
