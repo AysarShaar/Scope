@@ -75,9 +75,18 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: '/(favicon.ico|favicon.svg|icon.svg|apple-touch-icon.png|logo.svg|lens-icon.svg|scope-media-logo-.*\\.svg)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=604800, immutable',
+          },
+        ],
+      },
     ];
   },
-  transpilePackages: ['motion'],
+  transpilePackages: ['motion', 'react-simple-maps'],
   webpack: (config, { dev }) => {
     if (dev && process.env.DISABLE_HMR === 'true') {
       config.watchOptions = {
@@ -95,4 +104,8 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-initOpenNextCloudflareForDev();
+if (process.platform !== 'android') {
+  initOpenNextCloudflareForDev().catch((err) => {
+    console.warn('[cloudflare-dev] Failed to initialize Cloudflare proxy context:', err?.message || err);
+  });
+}

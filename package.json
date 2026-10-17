@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
@@ -15,7 +15,8 @@
     "start": "next start",
     "lint": "eslint .",
     "clean": "rm -rf .next",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "command -v termux-fix-shebang >/dev/null 2>&1 && termux-fix-shebang node_modules/.bin/* || true"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.8",
@@ -42,6 +43,7 @@
     "postcss": "^8.5.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-simple-maps": "^5.0.5",
     "sanitize-html": "^2.18.0"
   },
   "devDependencies": {
@@ -52,6 +54,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-simple-maps": "^3.0.6",
     "@typescript-eslint/parser": "^8.71.0",
     "drizzle-kit": "^0.18.1",
     "eslint": "9.39.1",
@@ -63,7 +66,9 @@
   "optionalDependencies": {
     "@emnapi/runtime": "1.11.3",
     "@img/sharp-wasm32": "0.35.5",
+    "@tailwindcss/oxide-android-arm64": "4.1.11",
     "@tailwindcss/oxide-win32-x64-msvc": "4.1.11",
+    "lightningcss-android-arm64": "1.33.0",
     "lightningcss-win32-x64-msvc": "1.30.1"
   },
   "overrides": {
