@@ -606,72 +606,26 @@ export default function ArticlesList({
 
       <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs">
         {isDbLoading ? (
-          <div>
-            {/* Desktop Table Skeletons */}
-            <div className="overflow-x-auto max-sm:hidden">
-              <table className="w-full text-xs text-right">
-                <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 border-b border-slate-100 dark:border-slate-800/80">
-                  <tr>
-                    <th className="px-4 py-3.5 font-semibold">المادة الصحفية</th>
-                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden sm:table-cell">القسم</th>
-                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap">الحالة</th>
-                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden md:table-cell">الكاتب</th>
-                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden lg:table-cell">تاريخ الإنشاء</th>
-                    <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap text-center">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 shrink-0" />
-                          <div className="space-y-1.5 flex-1 min-w-0">
-                            <div className="h-4 w-3/4 bg-slate-200/80 dark:bg-slate-800/80 rounded" />
-                            <div className="h-3 w-1/3 bg-slate-100 dark:bg-slate-800/50 rounded" />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3.5 py-3.5 hidden sm:table-cell">
-                        <div className="h-5 w-16 bg-slate-200/70 dark:bg-slate-800/70 rounded-md" />
-                      </td>
-                      <td className="px-3.5 py-3.5">
-                        <div className="h-5 w-20 bg-slate-200/70 dark:bg-slate-800/70 rounded-md" />
-                      </td>
-                      <td className="px-3.5 py-3.5 hidden md:table-cell">
-                        <div className="h-4 w-24 bg-slate-200/70 dark:bg-slate-800/70 rounded" />
-                      </td>
-                      <td className="px-3.5 py-3.5 hidden lg:table-cell">
-                        <div className="h-4 w-28 bg-slate-200/70 dark:bg-slate-800/70 rounded" />
-                      </td>
-                      <td className="px-3.5 py-3.5 text-center">
-                        <div className="h-8 w-28 mx-auto bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card Skeletons */}
-            <ul className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800/70 p-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <li key={i} className="p-3.5 space-y-3 animate-pulse">
-                  <div className="flex gap-3">
-                    <div className="w-16 h-16 rounded-lg bg-slate-200/80 dark:bg-slate-800/80 shrink-0" />
-                    <div className="space-y-2 flex-1 min-w-0">
-                      <div className="h-4 w-3/4 bg-slate-200/80 dark:bg-slate-800/80 rounded" />
-                      <div className="h-3 w-1/2 bg-slate-100 dark:bg-slate-800/60 rounded" />
-                    </div>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800/70">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <li key={i} className="p-4 sm:p-5 space-y-3 animate-pulse">
+                <div className="flex gap-3.5 sm:gap-4">
+                  <div className="w-16 h-16 sm:w-24 sm:h-20 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 shrink-0" />
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="h-4 sm:h-5 w-3/4 bg-slate-200/80 dark:bg-slate-800/80 rounded" />
+                    <div className="h-3 sm:h-4 w-1/2 bg-slate-100 dark:bg-slate-800/60 rounded" />
+                    <div className="h-3 w-1/3 bg-slate-100 dark:bg-slate-800/40 rounded" />
                   </div>
-                  <div className="flex gap-2">
-                    <div className="h-10 flex-1 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
-                    <div className="h-10 flex-1 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="h-9 w-24 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
+                  <div className="h-9 w-28 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
+                  <div className="h-9 w-9 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
+                  <div className="h-9 w-9 bg-slate-200/70 dark:bg-slate-800/70 rounded-lg" />
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : articles.length === 0 ? (
           <div className="text-center py-20 text-slate-400 dark:text-slate-500 text-xs space-y-3">
             <p>لا توجد مواد تطابق معايير البحث والفلترة المحددة في قاعدة البيانات.</p>
@@ -686,214 +640,72 @@ export default function ArticlesList({
             )}
           </div>
         ) : (
-          <>
-          <div className="overflow-x-auto max-sm:hidden">
-            <table className="w-full text-xs text-right">
-              <thead className="bg-slate-50/80 dark:bg-slate-900/60 text-slate-500 border-b border-slate-100 dark:border-slate-800/80">
-                <tr>
-                  <th className="px-4 py-3.5 font-semibold">المادة الصحفية</th>
-                  <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden sm:table-cell">القسم</th>
-                  <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap">الحالة</th>
-                  <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden md:table-cell">الكاتب</th>
-                  <th
-                    onClick={toggleSortOrder}
-                    className="px-3.5 py-3.5 font-semibold whitespace-nowrap hidden lg:table-cell cursor-pointer select-none group hover:text-slate-900 dark:hover:text-white transition-colors"
-                    title={sortOrder === 'desc' ? 'انقر للترتيب من الأقدم للأحدث' : 'انقر للترتيب من الأحدث للأقدم'}
-                  >
-                    <div className="inline-flex items-center gap-1.5">
-                      <span>تاريخ الإنشاء (اليوم · الشهر · السنة)</span>
-                      {sortOrder === 'desc' ? (
-                        <span className="inline-flex items-center gap-0.5 text-[#A42424] font-bold">
-                          <ArrowDown size={13} className="stroke-[2.5]" />
-                          <span className="text-[10px]">الأحدث</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-0.5 text-[#A42424] font-bold">
-                          <ArrowUp size={13} className="stroke-[2.5]" />
-                          <span className="text-[10px]">الأقدم</span>
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th className="px-3.5 py-3.5 font-semibold whitespace-nowrap text-center">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {articles.map((art) => {
-                  const { dateAr, timeStr } = formatArticleArabicDate(art.createdAt, art.date);
-                  return (
-                    <tr
-                      key={art.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-900/40 transition-colors"
-                    >
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-start gap-3">
-                          {art.imageUrl && (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={art.imageUrl}
-                              alt=""
-                              className="w-11 h-11 rounded-lg object-cover shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800"
-                            />
-                          )}
-                          <div className="min-w-0 flex-1 space-y-0.5">
-                            <span className="font-bold text-slate-900 dark:text-white line-clamp-1 block text-[13px]">
-                              {art.title}
-                            </span>
-                            {art.subtitle && (
-                              <span className="text-slate-500 dark:text-slate-400 line-clamp-1 block text-xs">
-                                {art.subtitle}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-3.5 py-3.5 whitespace-nowrap hidden sm:table-cell">
-                        <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
-                          {art.category || 'عام'}
-                        </span>
-                      </td>
-
-                      <td className="px-3.5 py-3.5 whitespace-nowrap">
-                        {art.status === 'pending' ? (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                            <span>قيد المراجعة</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span>منشور</span>
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-3.5 py-3.5 whitespace-nowrap text-slate-600 dark:text-slate-300 hidden md:table-cell">
-                        {art.author?.name || '—'}
-                      </td>
-
-                      <td className="px-3.5 py-3.5 whitespace-nowrap text-slate-600 dark:text-slate-300 hidden lg:table-cell">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-slate-800 dark:text-slate-200 inline-block" dir="rtl">
-                            <bdi>{dateAr}</bdi>
-                          </span>
-                          {timeStr && (
-                            <span className="text-[10px] text-slate-400 font-mono" dir="ltr">
-                              {timeStr}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="px-3.5 py-3.5 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {art.status === 'pending' && canManageArticles && onApprove && (
-                            <button
-                              onClick={() => handleQuickApprove(art)}
-                              disabled={approvingId === art.id}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                              title="اعتماد ونشر المادة"
-                            >
-                              <Check size={12} />
-                              <span>اعتماد</span>
-                            </button>
-                          )}
-
-                          {art.status !== 'pending' && (
-                            <a
-                              href={`/news/${art.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors"
-                              title="معاينة في الموقع"
-                            >
-                              <Eye size={14} />
-                            </a>
-                          )}
-
-                          <button
-                            onClick={() => onEdit(art)}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors cursor-pointer"
-                            title="تعديل المادة"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-
-                          {canManageArticles && (
-                            <button
-                              onClick={() => handleToggleSpecial(art)}
-                              disabled={togglingSpecialId === art.id}
-                              className={`inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50 ${
-                                art.isSpecial
-                                  ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/80 dark:border-rose-900/60'
-                                  : 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700/60'
-                              }`}
-                              title={art.isSpecial ? 'إزالة من المقالات المميزة' : 'تعيين كمقال مميز'}
-                            >
-                              <span>{art.isSpecial ? 'إزالة من المميزة' : 'تعيين كمميز'}</span>
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleDeleteItem(art)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
-                            title="حذف المادة"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <ul className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800/70">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800/70">
             {articles.map((art) => {
-              const { dateAr } = formatArticleArabicDate(art.createdAt, art.date);
+              const { dateAr, timeStr } = formatArticleArabicDate(art.createdAt, art.date);
               const isPending = art.status === 'pending';
               return (
-                <li key={art.id} className="p-3.5">
-                  <div className="flex gap-3">
-                    {art.imageUrl && (
+                <li
+                  key={art.id}
+                  className="p-4 sm:p-5 hover:bg-slate-50/60 dark:hover:bg-slate-900/30 transition-colors"
+                >
+                  <div className="flex items-start gap-3.5 sm:gap-4">
+                    {art.imageUrl ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={art.imageUrl}
                         alt=""
-                        className="w-16 h-16 rounded-lg object-cover shrink-0 bg-slate-100 dark:bg-slate-800"
+                        className="w-16 h-16 sm:w-24 sm:h-20 rounded-xl object-cover shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800 shadow-2xs"
                       />
+                    ) : (
+                      <div className="w-16 h-16 sm:w-24 sm:h-20 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center shrink-0 text-slate-400">
+                        <Edit3 size={20} />
+                      </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-[15px] leading-snug text-slate-900 dark:text-white line-clamp-2">
+                      <h3 className="font-bold text-[15px] sm:text-base leading-snug text-slate-900 dark:text-white line-clamp-2">
                         {art.title}
                       </h3>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
-                        {[art.category || 'عام', art.author?.name].filter(Boolean).join(' · ')}
-                      </p>
-                      <p className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
+                      {art.subtitle && (
+                        <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
+                          {art.subtitle}
+                        </p>
+                      )}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
+                          {art.category || 'عام'}
+                        </span>
+                        {art.author?.name && (
+                          <>
+                            <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
+                            <span className="text-slate-600 dark:text-slate-300 font-medium">{art.author.name}</span>
+                          </>
+                        )}
+                        <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
                         <span
-                          className={`inline-flex items-center gap-1 font-semibold ${
+                          className={`inline-flex items-center gap-1 font-semibold text-[11px] ${
                             isPending ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                           {isPending ? 'قيد المراجعة' : 'منشور'}
                         </span>
-                        <span aria-hidden="true">·</span>
-                        <span>{dateAr}</span>
-                      </p>
+                        <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">·</span>
+                        <span className="font-mono text-[11px] text-slate-400">
+                          {dateAr} {timeStr ? `(${timeStr})` : ''}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2">
+                  {/* Action buttons positioned directly under image and title */}
+                  <div className="mt-3.5 flex flex-wrap items-center gap-2">
                     {isPending && canManageArticles && onApprove && (
                       <button
                         onClick={() => handleQuickApprove(art)}
                         disabled={approvingId === art.id}
-                        className="flex-1 h-10 inline-flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 disabled:opacity-50 cursor-pointer"
+                        className="flex-1 sm:flex-initial h-10 sm:h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors disabled:opacity-50 cursor-pointer"
+                        title="اعتماد ونشر المادة"
                       >
                         <Check size={14} />
                         <span>اعتماد</span>
@@ -901,7 +713,8 @@ export default function ArticlesList({
                     )}
                     <button
                       onClick={() => onEdit(art)}
-                      className="flex-1 h-10 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 active:bg-slate-100 dark:active:bg-slate-800 cursor-pointer"
+                      className="flex-1 sm:flex-initial h-10 sm:h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                      title="تعديل المادة"
                     >
                       <Edit3 size={14} />
                       <span>تعديل</span>
@@ -910,11 +723,12 @@ export default function ArticlesList({
                       <button
                         onClick={() => handleToggleSpecial(art)}
                         disabled={togglingSpecialId === art.id}
-                        className={`flex-1 h-10 inline-flex items-center justify-center rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50 transition-colors ${
+                        className={`flex-1 sm:flex-initial h-10 sm:h-9 px-4 inline-flex items-center justify-center rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50 transition-colors ${
                           art.isSpecial
                             ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/80 dark:border-rose-900/60 active:bg-rose-200/50'
                             : 'border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/80 active:bg-slate-100 dark:active:bg-slate-800'
                         }`}
+                        title={art.isSpecial ? 'إزالة من المقالات المميزة' : 'تعيين كمقال مميز'}
                       >
                         <span>{art.isSpecial ? 'إزالة من المميزة' : 'تعيين كمميز'}</span>
                       </button>
@@ -925,7 +739,8 @@ export default function ArticlesList({
                         target="_blank"
                         rel="noreferrer"
                         aria-label="معاينة في الموقع"
-                        className="h-10 w-10 shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+                        className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        title="معاينة في الموقع"
                       >
                         <Eye size={16} />
                       </a>
@@ -933,7 +748,8 @@ export default function ArticlesList({
                     <button
                       onClick={() => handleDeleteItem(art)}
                       aria-label="حذف المادة"
-                      className="h-10 w-10 shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-rose-600 dark:text-rose-400 cursor-pointer"
+                      className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title="حذف المادة"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -942,7 +758,6 @@ export default function ArticlesList({
               );
             })}
           </ul>
-          </>
         )}
 
         {!isDbLoading && articles.length > 0 && (
