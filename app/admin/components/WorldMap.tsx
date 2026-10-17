@@ -25,9 +25,14 @@ interface WorldMapProps {
   onSelectCountry?: (code: string | null) => void;
 }
 
+interface CardPosition {
+  x: number;
+  y: number;
+}
+
 export default function WorldMap({ countries, activeCode, onSelectCountry }: WorldMapProps) {
   const [hoveredCountry, setHoveredCountry] = useState<WorldMapCountry | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [cardPos, setCardPos] = useState<CardPosition | null>(null);
   const [zoom, setZoom] = useState(1);
   const [center, setCenter] = useState<[number, number]>([0, 20]);
   const [isDark, setIsDark] = useState(false);
@@ -64,32 +69,119 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
     return countryMap.get(activeCode.toLowerCase()) || null;
   }, [activeCode, countryMap]);
 
+  // Active country to display in the card (hovered takes preview precedence, otherwise selected)
+  const displayCountry = hoveredCountry || selectedCountry;
+  const isPinned = Boolean(selectedCountry && (!hoveredCountry || hoveredCountry.code === selectedCountry.code));
+
   const handleResetZoom = useCallback(() => {
     setZoom(1);
     setCenter([0, 20]);
   }, []);
 
-  // Tooltip tracking on country
-  const handleCountryMouseMove = (e: React.MouseEvent, country: WorldMapCountry) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (rect) {
-      setTooltipPos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
+  // Helper to compute a stable position beside an anchor point or country element
+  const calculateCardPosition = useCallback(
+    (anchorX: number, anchorY: number): CardPosition | null => {
+      const container = containerRef.current;
+      if (!container) return null;
+      const contRect = container.getBoundingClientRect();
+
+      const cardWidth = 186;
+      const cardHeight = 82;
+      const offset = 14;
+
+      // Position beside: to the left if in right half of map, to the right if in left half
+      const placeOnLeft = anchorX > contRect.width / 2;
+      const targetLeft = placeOnLeft
+        ? anchorX - cardWidth - offset
+        : anchorX + offset;
+
+      const targetTop = anchorY - cardHeight / 2;
+
+      // Clamp strictly inside container bounds
+      const x = Math.max(10, Math.min(contRect.width - cardWidth - 10, targetLeft));
+      const y = Math.max(10, Math.min(contRect.height - cardHeight - 10, targetTop));
+
+      return { x, y };
+    },
+    []
+  );
+
+  // Position from country SVG element centroid (used when selected from list or after zoom/pan)
+  const updatePositionFromElement = useCallback(
+    (code: string) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const el = container.querySelector(`[data-country-code="${code.toLowerCase()}"]`);
+      if (!el) return;
+
+      const contRect = container.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+
+      const centerX = rect.left + rect.width / 2 - contRect.left;
+      const centerY = rect.top + rect.height / 2 - contRect.top;
+
+      const pos = calculateCardPosition(centerX, centerY);
+      if (pos) {
+        setCardPos(pos);
+      }
+    },
+    [calculateCardPosition]
+  );
+
+  // When activeCode changes or zoom/center moves, re-anchor card if country is selected
+  useEffect(() => {
+    if (activeCode) {
+      // Delay slightly to let SVG transform complete
+      const timer = setTimeout(() => {
+        updatePositionFromElement(activeCode);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else if (!hoveredCountry) {
+      setCardPos(null);
+    }
+  }, [activeCode, zoom, center, updatePositionFromElement, hoveredCountry]);
+
+  // Handle country mouse enter (calculates position once to avoid cursor jitter)
+  const handleCountryMouseEnter = (country: WorldMapCountry, e: React.MouseEvent) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const contRect = container.getBoundingClientRect();
+
+    const anchorX = e.clientX - contRect.left;
+    const anchorY = e.clientY - contRect.top;
+
+    const pos = calculateCardPosition(anchorX, anchorY);
+    if (pos) {
+      setCardPos(pos);
       setHoveredCountry(country);
     }
   };
 
   const handleCountryMouseLeave = () => {
     setHoveredCountry(null);
-    setTooltipPos(null);
+    if (selectedCountry) {
+      updatePositionFromElement(selectedCountry.code);
+    } else {
+      setCardPos(null);
+    }
   };
 
-  const handleCountryClick = (country: WorldMapCountry) => {
+  const handleCountryClick = (country: WorldMapCountry, e: React.MouseEvent) => {
+    e.stopPropagation();
     const isSelected = activeCode?.toLowerCase() === country.code.toLowerCase();
     if (onSelectCountry) {
       onSelectCountry(isSelected ? null : country.code);
+    }
+
+    if (!isSelected) {
+      const container = containerRef.current;
+      if (container) {
+        const contRect = container.getBoundingClientRect();
+        const pos = calculateCardPosition(e.clientX - contRect.left, e.clientY - contRect.top);
+        if (pos) setCardPos(pos);
+      }
+    } else {
+      setCardPos(null);
     }
   };
 
@@ -98,6 +190,13 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
       ref={containerRef}
       className="relative w-full rounded-2xl bg-slate-50/80 dark:bg-[#070b14] border border-slate-200/80 dark:border-slate-800/90 p-2 sm:p-4 select-none overflow-hidden transition-colors"
       onDoubleClick={handleResetZoom}
+      onClick={() => {
+        // Deselect if user clicks on empty space outside countries
+        if (activeCode && onSelectCountry) {
+          onSelectCountry(null);
+          setCardPos(null);
+        }
+      }}
     >
       {/* Subtle Zoom Status Pill (Shows current zoom level without buttons) */}
       {zoom > 1.05 && (
@@ -107,7 +206,10 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
           </span>
           <button
             type="button"
-            onClick={handleResetZoom}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleResetZoom();
+            }}
             aria-label="إعادة ضبط التكبير"
             title="انقر نقراً مزدوجاً أو اضغط هنا لإعادة الضبط"
             className="text-[10px] text-slate-400 hover:text-[#A42424] dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
@@ -118,68 +220,72 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
         </div>
       )}
 
-      {/* Selected Country Pinned Banner */}
-      {selectedCountry && (
-        <div className="mb-2 p-2.5 rounded-lg bg-rose-50/90 dark:bg-rose-950/40 border border-[#A42424]/40 dark:border-rose-500/40 flex items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
-          <div className="flex items-center gap-2">
-            <span className="text-xl leading-none">{selectedCountry.flag}</span>
-            <span className="font-bold text-slate-900 dark:text-white text-sm">
-              {selectedCountry.nameAr}
-            </span>
-            <span className="text-xs font-mono text-slate-400" dir="ltr">
-              ({selectedCountry.code})
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="font-mono tabular-nums font-bold text-slate-900 dark:text-white">
-              {selectedCountry.count.toLocaleString()}{' '}
-              <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400 font-sans">
-                مشاهدة
-              </span>
-            </span>
-            <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
-              ({selectedCountry.percentage}%)
-            </span>
-            <button
-              type="button"
-              onClick={() => onSelectCountry && onSelectCountry(null)}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-rose-100/60 dark:hover:bg-rose-900/40 transition-colors cursor-pointer"
-              aria-label="إلغاء التحديد"
-              title="إغلاق"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Floating Smart Tooltip */}
-      {hoveredCountry && tooltipPos && (
+      {/* Elegant Bespoke Country Card (Stably positioned beside country) */}
+      {displayCountry && cardPos && (
         <div
-          className={`absolute z-30 pointer-events-none px-3 py-2 rounded-lg bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white text-xs shadow-xl border border-slate-700/60 whitespace-nowrap transition-transform duration-75 ${
-            tooltipPos.y < 85 ? 'translate-y-4' : '-translate-y-full -mt-2'
-          }`}
+          className="absolute z-30 pointer-events-auto transition-all duration-150 ease-out"
           style={{
-            left: `${Math.max(60, Math.min((containerRef.current?.clientWidth || 300) - 120, tooltipPos.x))}px`,
-            top: `${tooltipPos.y}px`,
-            transform: `translateX(-50%) ${tooltipPos.y < 85 ? 'translateY(16px)' : 'translateY(-100%)'}`,
+            left: `${cardPos.x}px`,
+            top: `${cardPos.y}px`,
+            width: '186px',
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-1.5 font-bold">
-            <span className="text-base leading-none">{hoveredCountry.flag}</span>
-            <span>{hoveredCountry.nameAr}</span>
-            <span className="text-[10px] text-slate-400 font-mono" dir="ltr">
-              ({hoveredCountry.code})
-            </span>
-          </div>
-          <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-slate-300">
-            <span>المشاهدات:</span>
-            <span className="font-mono tabular-nums font-bold text-white">
-              {hoveredCountry.count.toLocaleString()}
-            </span>
-            <span className="text-emerald-400 font-mono font-bold">
-              ({hoveredCountry.percentage}%)
-            </span>
+          <div className="relative rounded-xl p-3 bg-white/95 dark:bg-[#0c121e]/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800/90 shadow-[0_10px_25px_-5px_rgba(15,23,42,0.12),0_4px_10px_rgba(15,23,42,0.04)] dark:shadow-[0_14px_30px_-6px_rgba(0,0,0,0.65)] animate-in fade-in zoom-in-95 duration-150">
+            {/* Header: Flag, Name, Code, Close button if pinned */}
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-base leading-none shrink-0 drop-shadow-xs">
+                  {displayCountry.flag}
+                </span>
+                <span className="font-bold text-[13px] text-slate-900 dark:text-slate-100 truncate">
+                  {displayCountry.nameAr}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span
+                  className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60"
+                  dir="ltr"
+                >
+                  {displayCountry.code}
+                </span>
+                {isPinned && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectCountry?.(null);
+                      setHoveredCountry(null);
+                      setCardPos(null);
+                    }}
+                    className="p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    aria-label="إلغاء التحديد"
+                    title="إغلاق"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Hairline Divider */}
+            <div className="my-2 h-px bg-slate-100 dark:bg-slate-800/80" />
+
+            {/* Metrics Row */}
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="flex items-baseline gap-1">
+                <span className="font-mono tabular-nums font-bold text-sm text-slate-900 dark:text-white">
+                  {displayCountry.count.toLocaleString()}
+                </span>
+                <span className="text-[10px] text-slate-400 font-sans">مشاهدة</span>
+              </div>
+              <span
+                className="font-mono tabular-nums font-bold text-[11px] px-2 py-0.5 rounded-full bg-rose-50 text-[#A42424] dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/60 shrink-0"
+                dir="ltr"
+              >
+                {displayCountry.percentage}%
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -201,6 +307,10 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
             minZoom={1}
             maxZoom={6}
             center={center}
+            translateExtent={[
+              [-20, -80],
+              [820, 470],
+            ]}
             onMoveEnd={({ coordinates, zoom: nextZoom }) => {
               if (typeof nextZoom === 'number') {
                 setZoom(nextZoom);
@@ -260,6 +370,7 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
                       fill={fillColor}
                       stroke={strokeColor}
                       strokeWidth={strokeWidth}
+                      data-country-code={code}
                       className={`transition-colors duration-150 outline-none ${
                         hasTraffic
                           ? 'cursor-pointer hover:opacity-85 hover:stroke-white dark:hover:stroke-slate-200'
@@ -270,10 +381,9 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
                           : ''
                       }`}
                       style={{ outline: 'none' }}
-                      onMouseEnter={(e) => country && handleCountryMouseMove(e, country)}
-                      onMouseMove={(e) => country && handleCountryMouseMove(e, country)}
+                      onMouseEnter={(e) => country && handleCountryMouseEnter(country, e)}
                       onMouseLeave={handleCountryMouseLeave}
-                      onClick={() => country && handleCountryClick(country)}
+                      onClick={(e) => country && handleCountryClick(country, e)}
                     />
                   );
                 })
