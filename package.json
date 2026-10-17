@@ -15,8 +15,7 @@
     "start": "next start",
     "lint": "eslint .",
     "clean": "rm -rf .next",
-    "test": "vitest run",
-    "postinstall": "command -v termux-fix-shebang >/dev/null 2>&1 && termux-fix-shebang node_modules/.bin/* || true"
+    "test": "vitest run"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.8",
