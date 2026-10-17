@@ -64,33 +64,27 @@ function installDOMSafetyPatch() {
   };
 }
 
-function setGoogleTransCookie(val: string) {
+function writeGoogleTransCookie(valueAndAttributes: string) {
   if (typeof document === 'undefined') return;
   const hostname = window.location.hostname;
-  document.cookie = `googtrans=${val}; path=/;`;
-  if (hostname && hostname !== 'localhost') {
-    document.cookie = `googtrans=${val}; path=/; domain=${hostname};`;
-    const parts = hostname.split('.');
-    if (parts.length > 1) {
-      const rootDomain = '.' + parts.slice(-2).join('.');
-      document.cookie = `googtrans=${val}; path=/; domain=${rootDomain};`;
-    }
+  document.cookie = `googtrans=${valueAndAttributes}; path=/;`;
+
+  if (!hostname || hostname === 'localhost') return;
+
+  document.cookie = `googtrans=${valueAndAttributes}; path=/; domain=${hostname};`;
+  const parts = hostname.split('.');
+  if (parts.length > 1) {
+    const rootDomain = '.' + parts.slice(-2).join('.');
+    document.cookie = `googtrans=${valueAndAttributes}; path=/; domain=${rootDomain};`;
   }
 }
 
+function setGoogleTransCookie(val: string) {
+  writeGoogleTransCookie(val);
+}
+
 function clearGoogleTransCookie() {
-  if (typeof document === 'undefined') return;
-  const hostname = window.location.hostname;
-  const expired = 'expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-  document.cookie = `googtrans=; ${expired}`;
-  if (hostname && hostname !== 'localhost') {
-    document.cookie = `googtrans=; ${expired} domain=${hostname};`;
-    const parts = hostname.split('.');
-    if (parts.length > 1) {
-      const rootDomain = '.' + parts.slice(-2).join('.');
-      document.cookie = `googtrans=; ${expired} domain=${rootDomain};`;
-    }
-  }
+  writeGoogleTransCookie('; expires=Thu, 01 Jan 1970 00:00:00 UTC');
 }
 
 function loadGoogleTranslateScript(callback?: () => void) {
