@@ -59,11 +59,17 @@ export default function ArticleEditor({
   const currentLoggedEditor = editors.find(e => e.id === currentEditorId) || null;
 
   const [selectedEditorId, setSelectedEditorId] = useState<string>(() => {
-    if (userRole === 'editor') {
-      return currentEditorId || currentLoggedEditor?.id || '';
-    }
     if (initialEditor) return initialEditor.id;
-    if (article?.author?.name) return 'custom';
+    if (article?.author?.name) {
+      if (
+        article.author.name === 'فريق تحرير SCOPE' ||
+        article.author.name === 'فريق تحرير SCOPE MEDIA'
+      ) {
+        return '';
+      }
+      return 'custom';
+    }
+    // New article defaults to '' (الافتراضي: اختيار من الفريق)
     return '';
   });
 
@@ -71,15 +77,11 @@ export default function ArticleEditor({
   const [subtitle, setSubtitle] = useState(article?.subtitle || '');
   const [catSlug, setCatSlug] = useState<string>(article?.categorySlug || 'news');
   const [authorName, setAuthorName] = useState(() => {
-    if (userRole === 'editor' && currentLoggedEditor) {
-      return currentLoggedEditor.name;
-    }
+    if (initialEditor) return initialEditor.name;
     return article?.author?.name || 'فريق تحرير SCOPE';
   });
   const [authorRole, setAuthorRole] = useState(() => {
-    if (userRole === 'editor' && currentLoggedEditor) {
-      return currentLoggedEditor.role;
-    }
+    if (initialEditor) return initialEditor.role;
     return article?.author?.role || 'هيئة التحرير';
   });
   const [date, setDate] = useState(() => {
@@ -113,9 +115,14 @@ export default function ArticleEditor({
   const handleEditorSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setSelectedEditorId(val);
-    if (val === 'custom' || !val) {
+    if (val === 'custom') {
       setAuthorName('');
       setAuthorRole('');
+      return;
+    }
+    if (!val) {
+      setAuthorName('فريق تحرير SCOPE');
+      setAuthorRole('هيئة التحرير');
       return;
     }
     const ed = editors.find(x => x.id === val);
@@ -125,31 +132,39 @@ export default function ArticleEditor({
     }
   };
 
+  const handleQuickAuthorChoice = (choice: 'self' | 'team') => {
+    if (choice === 'self' && currentLoggedEditor) {
+      setSelectedEditorId(currentLoggedEditor.id);
+      setAuthorName(currentLoggedEditor.name);
+      setAuthorRole(currentLoggedEditor.role);
+    } else {
+      setSelectedEditorId('');
+      setAuthorName('فريق تحرير SCOPE');
+      setAuthorRole('هيئة التحرير');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!title.trim()) return;
     const cat = CATEGORIES.find(c => c.slug === catSlug) || CATEGORIES[0];
     const contentArray = htmlToContentArray(htmlContent);
 
-    let editorId: string | undefined = selectedEditorId;
+    let editorId: string | undefined =
+      selectedEditorId && selectedEditorId !== 'custom' ? selectedEditorId : undefined;
     let authorAvatar: string | undefined;
 
-    if (!canPublishDirectly) {
-      editorId = currentEditorId || currentLoggedEditor?.id || undefined;
-      authorAvatar = currentLoggedEditor?.avatarUrl || undefined;
-    } else if (selectedEditorId !== 'custom' && selectedEditorId) {
+    if (selectedEditorId && selectedEditorId !== 'custom') {
       const ed = editors.find(x => x.id === selectedEditorId);
       if (ed) {
         editorId = ed.id;
         authorAvatar = ed.avatarUrl;
       }
+    } else if (currentLoggedEditor && !canPublishDirectly) {
+      editorId = currentLoggedEditor.id;
     }
 
-    const finalAuthorName = !canPublishDirectly
-      ? (currentLoggedEditor?.name || authorName.trim())
-      : authorName.trim();
-    const finalAuthorRole = !canPublishDirectly
-      ? (currentLoggedEditor?.role || authorRole.trim())
-      : authorRole.trim();
+    const finalAuthorName = authorName.trim() || 'فريق تحرير SCOPE';
+    const finalAuthorRole = authorRole.trim() || 'هيئة التحرير';
 
     let finalDate = date.trim() || defaultDate;
     if (isFutureDate(finalDate)) {
@@ -277,24 +292,64 @@ export default function ArticleEditor({
             </div>
           </div>
 
-          {canPublishDirectly ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                الكاتب / المحرر المسؤول
+              </label>
+              {currentLoggedEditor && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickAuthorChoice('team')}
+                    className={`px-2 py-0.5 text-[11px] rounded transition-colors cursor-pointer border ${
+                      !selectedEditorId
+                        ? 'bg-[#0F4468] text-white border-[#0F4468] font-bold shadow-2xs'
+                        : 'bg-white dark:bg-[#121624] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    الافتراضي (اختيار من الفريق)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickAuthorChoice('self')}
+                    className={`px-2 py-0.5 text-[11px] rounded transition-colors cursor-pointer border ${
+                      selectedEditorId === currentLoggedEditor.id
+                        ? 'bg-[#0F4468] text-white border-[#0F4468] font-bold shadow-2xs'
+                        : 'bg-white dark:bg-[#121624] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    اسمي ({currentLoggedEditor.name})
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className={selectedEditorId === 'custom' && canPublishDirectly ? 'grid grid-cols-1 sm:grid-cols-2 gap-2.5' : ''}>
               <div>
-                <label className="block text-[11px] text-slate-500 mb-1">الكاتب / المحرر</label>
                 <select
                   className={inputClass}
                   value={selectedEditorId}
                   onChange={handleEditorSelect}
                 >
-                  <option value="">-- اختيار من الفريق --</option>
-                  {editors.map(e => (
-                    <option key={e.id} value={e.id}>{e.name} ({e.role})</option>
-                  ))}
-                  <option value="custom">إدخال مخصص</option>
+                  <option value="">اختيار من الفريق (الافتراضي: فريق تحرير SCOPE)</option>
+                  {currentLoggedEditor && (
+                    <option value={currentLoggedEditor.id}>
+                      اسمي: {currentLoggedEditor.name} ({currentLoggedEditor.role}) - حسابك الحالي
+                    </option>
+                  )}
+                  {editors
+                    .filter(e => e.id !== currentLoggedEditor?.id)
+                    .map(e => (
+                      <option key={e.id} value={e.id}>
+                        {e.name} ({e.role})
+                      </option>
+                    ))}
+                  {canPublishDirectly && <option value="custom">إدخال مخصص</option>}
                 </select>
               </div>
 
-              {selectedEditorId === 'custom' && (
+              {canPublishDirectly && selectedEditorId === 'custom' && (
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="block text-[11px] text-slate-500 mb-1">الاسم</label>
@@ -315,22 +370,23 @@ export default function ArticleEditor({
                 </div>
               )}
             </div>
-          ) : (
-            <div className="p-3 bg-slate-50 dark:bg-[#121624] border border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-between">
-              <div>
-                <span className="block text-[11px] text-slate-500 mb-0.5">الكاتب والمحرر المسؤول:</span>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  {currentLoggedEditor?.name || authorName}
+
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5">
+              {selectedEditorId === currentLoggedEditor?.id ? (
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  ✓ سيُنشر المقال باسمك: {currentLoggedEditor.name} ({currentLoggedEditor.role})
                 </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 mx-1.5">
-                  ({currentLoggedEditor?.role || authorRole})
+              ) : !selectedEditorId ? (
+                <span>
+                  الافتراضي: سيُنشر المقال باسم &quot;فريق تحرير SCOPE&quot;
                 </span>
-              </div>
-              <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
-                حسابك الحالي
-              </span>
+              ) : selectedEditorId !== 'custom' ? (
+                <span>
+                  سيُنشر المقال باسم: {authorName} ({authorRole})
+                </span>
+              ) : null}
             </div>
-          )}
+          </div>
 
           {canPublishDirectly && (
             <label className="flex items-start gap-3 p-3 max-sm:py-3.5 bg-slate-50 dark:bg-[#121624] border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer select-none">

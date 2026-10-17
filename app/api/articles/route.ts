@@ -258,7 +258,16 @@ export async function POST(request: NextRequest) {
     let finalEditorId = canPublishDirectly ? (body.editorId ?? null) : (editorId ?? null);
 
     if (!canPublishDirectly) {
-      if (env?.DB && editorId) {
+      if (body.author?.name && body.author.name.trim()) {
+        finalAuthorName = body.author.name.trim();
+        finalAuthorRole = body.author.role?.trim() || null;
+        if (body.authorAvatar !== undefined) {
+          finalAuthorAvatar = body.authorAvatar;
+        }
+        if (body.editorId) {
+          finalEditorId = body.editorId;
+        }
+      } else if (env?.DB && editorId) {
         try {
           const db = getDb(env.DB);
           const edRow = await db

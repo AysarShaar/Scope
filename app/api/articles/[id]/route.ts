@@ -112,13 +112,13 @@ export async function PUT(
     if (body.imageType !== undefined) updateData.imageType = body.imageType;
     if (body.imageUrl !== undefined) updateData.imageUrl = body.imageUrl;
     if (body.caption !== undefined) updateData.caption = body.caption;
-    if (body.author?.name !== undefined && canApproveOrPublish)
+    if (body.author?.name !== undefined)
       updateData.authorName = body.author.name;
-    if (body.author?.role !== undefined && canApproveOrPublish)
+    if (body.author?.role !== undefined)
       updateData.authorRole = body.author.role;
-    if (body.authorAvatar !== undefined && canApproveOrPublish)
+    if (body.authorAvatar !== undefined)
       updateData.authorAvatar = body.authorAvatar;
-    if (body.editorId !== undefined && canApproveOrPublish)
+    if (body.editorId !== undefined)
       updateData.editorId = body.editorId;
     if (body.content !== undefined) {
       const contentCheck = validateArticleContent(body.content);
