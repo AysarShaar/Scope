@@ -6,20 +6,27 @@ export function isHtmlBlock(block: string): boolean {
   return typeof block === 'string' && block.trimStart().startsWith('<');
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  '&nbsp;': ' ',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&amp;': '&',
+};
+
+function decodeHtmlEntities(text: string): string {
+  return text.replace(/&(nbsp|lt|gt|quot|#39|amp);/g, (match) => HTML_ENTITIES[match] || match);
+}
+
 export function blockToText(block: string): string {
   if (!isHtmlBlock(block)) return block.replace(/^(#|>)\s/, '');
-  return block
+  const stripped = block
     .replace(/<\/(p|h[1-3]|li|blockquote|pre)>/gi, ' ')
     .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/<[^>]*>/g, '');
+
+  return decodeHtmlEntities(stripped).replace(/\s+/g, ' ').trim();
 }
 
 export function contentToText(content?: string[] | null): string {

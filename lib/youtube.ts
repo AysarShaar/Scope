@@ -1,15 +1,16 @@
+const YOUTUBE_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+const YOUTUBE_URL_REGEX =
+  /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+
 export function extractYouTubeId(urlOrId?: string): string | null {
   if (!urlOrId || typeof urlOrId !== 'string') return null;
   const trimmed = urlOrId.trim();
 
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+  if (YOUTUBE_ID_REGEX.test(trimmed)) {
     return trimmed;
   }
 
-  const match = trimmed.match(
-    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i
-  );
-
+  const match = trimmed.match(YOUTUBE_URL_REGEX);
   return match && match[1] ? match[1] : null;
 }
 
