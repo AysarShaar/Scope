@@ -59,7 +59,7 @@ const STATIC_ASSETS = new Set([
 
 const KNOWN_EXACT = new Set([
   '/', '/news', '/programs', '/videos', '/search', '/privacy', '/terms', '/admin',
-  '/sitemap.xml', '/news-sitemap.xml', '/robots.txt', '/rss.xml', '/feed.xml',
+  '/sitemap.xml', '/news-sitemap.xml', '/robots.txt',
   ...STATIC_ASSETS,
 ]);
 const KNOWN_PREFIXES = ['/news/', '/category/', '/programs/', '/admin/', '/api/', '/_next/', '/.well-known/'];
@@ -80,7 +80,6 @@ function ttlForPath(pathname: string): number {
   if (pathname === '/privacy' || pathname === '/terms') return 86400; // 24 hours
   if (pathname === '/sitemap.xml') return 1800; // 30 minutes
   if (pathname === '/news-sitemap.xml') return 600; // 10 minutes
-  if (pathname === '/rss.xml' || pathname === '/feed.xml') return 300; // 5 minutes
   if (pathname === '/robots.txt') return 86400; // 24 hours
   return 0;
 }
