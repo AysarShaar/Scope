@@ -371,7 +371,7 @@ export default function AnalyticsDashboard() {
             {activeView === 'website' && data
               ? `${formatStamp(data.window.since)} ← ${formatStamp(data.window.until)}`
               : activeView === 'cloudflare'
-              ? 'مؤشرات Workers و R2 Storage عبر Cloudflare API'
+              ? 'إحصائيات المعالجة السحابية والتخزين عبر Cloudflare'
               : 'جارٍ التحميل…'}
           </p>
         </div>
