@@ -156,6 +156,16 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
                   {t.footer.terms}
                 </Link>
               </li>
+              <li>
+                <a
+                  href="/rss.xml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.footer.rss}
+                </a>
+              </li>
             </ul>
           </div>
         </div>
