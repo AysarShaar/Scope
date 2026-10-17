@@ -32,7 +32,7 @@ import type {
 type TimeRange = 'today' | '7d' | '30d';
 
 const TIME_RANGES: Array<{ id: TimeRange; label: string }> = [
-  { id: 'today', label: 'اليوم (آخر 24 ساعة)' },
+  { id: 'today', label: 'اليوم' },
   { id: '7d', label: 'آخر 7 أيام' },
   { id: '30d', label: 'آخر 30 يوماً' },
 ];
