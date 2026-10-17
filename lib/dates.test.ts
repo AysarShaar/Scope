@@ -10,6 +10,13 @@ describe('parseArticleDateToTime', () => {
     expect(new Date(t!).getDate()).toBe(5);
   });
 
+  it('parses Arabic display dates with Eastern Arabic digits', () => {
+    const t = parseArticleDateToTime('٥ مارس ٢٠٢٦');
+    expect(new Date(t!).getMonth()).toBe(2);
+    expect(new Date(t!).getDate()).toBe(5);
+    expect(new Date(t!).getFullYear()).toBe(2026);
+  });
+
   it('parses ISO dates with - or /', () => {
     expect(parseArticleDateToTime('2026-03-05')).toBe(parseArticleDateToTime('2026/03/05'));
   });

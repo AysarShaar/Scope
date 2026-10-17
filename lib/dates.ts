@@ -54,9 +54,13 @@ function createDatePartsFromDate(date: Date): DateParts {
   };
 }
 
+export function normalizeArabicDigits(str: string): string {
+  return str.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
+}
+
 function parseDatePartsOptional(dateStr?: string): DateParts | null {
   if (!dateStr || typeof dateStr !== 'string') return null;
-  const trimmed = dateStr.trim();
+  const trimmed = normalizeArabicDigits(dateStr.trim());
   if (!trimmed) return null;
 
   return parseArabicDate(trimmed) ?? parseIsoDate(trimmed) ?? parseNativeDate(trimmed);
@@ -67,10 +71,14 @@ function parseArabicDate(trimmed: string): DateParts | null {
     const monthName = ARABIC_MONTHS[monthIndex];
     if (!trimmed.includes(monthName)) continue;
 
-    const remaining = trimmed.replace(monthName, ' ').trim();
-    const [dayStr, yearStr] = remaining.split(/\s+/);
-    const day = parseInt(dayStr, 10);
-    const year = parseInt(yearStr, 10);
+    const remaining = trimmed.replace(monthName, ' ').replace(/[,،]/g, ' ').trim();
+    const parts = remaining.split(/\s+/).filter(Boolean);
+    if (parts.length < 2) continue;
+
+    const num1 = parseInt(parts[0], 10);
+    const num2 = parseInt(parts[1], 10);
+    const year = num1 > 1900 ? num1 : num2;
+    const day = num1 > 1900 ? num2 : num1;
 
     const isValidDay = !isNaN(day) && day >= 1 && day <= 31;
     const isValidYear = !isNaN(year) && year > 1900;

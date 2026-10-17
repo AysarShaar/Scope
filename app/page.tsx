@@ -10,7 +10,7 @@ export const revalidate = 120;
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
-  title: 'سكوب ميديا',
+  title: 'سكوب ميديا | SCOPE MEDIA',
   description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
   alternates: {
     canonical: '/',
@@ -30,10 +30,10 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'سكوب ميديا',
+    title: 'سكوب ميديا | SCOPE MEDIA',
     description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     url: `${siteUrl}/`,
-    siteName: 'سكوب ميديا',
+    siteName: 'سكوب ميديا | SCOPE MEDIA',
     locale: 'ar_AR',
     type: 'website',
     images: [
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'سكوب ميديا',
+    title: 'سكوب ميديا | SCOPE MEDIA',
     description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     images: [
       {

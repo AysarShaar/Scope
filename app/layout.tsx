@@ -25,8 +25,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'سكوب ميديا',
-    template: '%s',
+    default: 'سكوب ميديا | SCOPE MEDIA',
+    template: '%s | SCOPE MEDIA',
   },
   description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
   keywords: [
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   ],
   // No site-wide canonical here: a canonical set in the root layout is inherited by every page that
   // doesn't override it, which would tell Google that /category/*, /programs, ... all duplicate the home page.
-  applicationName: 'سكوب ميديا',
+  applicationName: 'سكوب ميديا | SCOPE MEDIA',
   formatDetection: { telephone: false, email: false, address: false },
   robots: {
     index: true,
@@ -57,10 +57,10 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'سكوب ميديا',
+    title: 'سكوب ميديا | SCOPE MEDIA',
     description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     url: siteUrl,
-    siteName: 'سكوب ميديا',
+    siteName: 'سكوب ميديا | SCOPE MEDIA',
     locale: 'ar_AR',
     type: 'website',
     images: [
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'سكوب ميديا',
+    title: 'سكوب ميديا | SCOPE MEDIA',
     description: 'منصة إعلامية مرئية تنطلق من السويداء، تعنى بشؤون الشرق الاوسط والعالم',
     images: [
       {
