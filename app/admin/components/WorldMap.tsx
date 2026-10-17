@@ -1,8 +1,15 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useCallback } from 'react';
-import mapData from '@/lib/worldMapPaths.json';
-import { ZoomIn, ZoomOut, RotateCcw, X } from 'lucide-react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import {
+  ComposableMap,
+  Geographies,
+  Geography,
+  ZoomableGroup,
+  Graticule,
+} from 'react-simple-maps';
+import geoData from '@/lib/world-countries-110m.json';
+import { X, RotateCcw } from 'lucide-react';
 
 export interface WorldMapCountry {
   code: string;
@@ -22,10 +29,19 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
   const [hoveredCountry, setHoveredCountry] = useState<WorldMapCountry | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });
+  const [center, setCenter] = useState<[number, number]>([0, 20]);
+  const [isDark, setIsDark] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize dark mode class with documentElement
+  useEffect(() => {
+    const checkDark = () => setIsDark(document.documentElement.classList.contains('dark'));
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Map country lookup by lowercase ISO code
   const countryMap = useMemo(() => {
@@ -48,58 +64,13 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
     return countryMap.get(activeCode.toLowerCase()) || null;
   }, [activeCode, countryMap]);
 
-  // Zoom controls
-  const handleZoomIn = () => {
-    setZoom((z) => Math.min(6, +(z + 0.6).toFixed(1)));
-  };
-
-  const handleZoomOut = () => {
-    setZoom((z) => {
-      const next = Math.max(1, +(z - 0.6).toFixed(1));
-      if (next === 1) setPan({ x: 0, y: 0 });
-      return next;
-    });
-  };
-
-  const handleReset = () => {
+  const handleResetZoom = useCallback(() => {
     setZoom(1);
-    setPan({ x: 0, y: 0 });
-  };
-
-  // Wheel zoom
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.3 : -0.3;
-    setZoom((z) => {
-      const next = Math.min(6, Math.max(1, +(z + delta).toFixed(1)));
-      if (next === 1) setPan({ x: 0, y: 0 });
-      return next;
-    });
-  };
-
-  // Mouse pan
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (zoom <= 1) return;
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
-  };
-
-  const handleMouseMoveMap = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    const maxX = (zoom - 1) * 350;
-    const maxY = (zoom - 1) * 200;
-    const newX = Math.min(maxX, Math.max(-maxX, e.clientX - dragStartRef.current.x));
-    const newY = Math.min(maxY, Math.max(-maxY, e.clientY - dragStartRef.current.y));
-    setPan({ x: newX, y: newY });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+    setCenter([0, 20]);
+  }, []);
 
   // Tooltip tracking on country
-  const handleCountryMouseMove = (e: React.MouseEvent<SVGElement>, country: WorldMapCountry) => {
-    if (isDragging) return;
+  const handleCountryMouseMove = (e: React.MouseEvent, country: WorldMapCountry) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
       setTooltipPos({
@@ -116,7 +87,6 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
   };
 
   const handleCountryClick = (country: WorldMapCountry) => {
-    if (isDragging) return;
     const isSelected = activeCode?.toLowerCase() === country.code.toLowerCase();
     if (onSelectCountry) {
       onSelectCountry(isSelected ? null : country.code);
@@ -126,46 +96,29 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
   return (
     <div
       ref={containerRef}
-      className="relative w-full rounded-xl bg-slate-50/70 dark:bg-[#070b14] border border-slate-100 dark:border-slate-800/80 p-2 sm:p-4 select-none"
+      className="relative w-full rounded-2xl bg-slate-50/80 dark:bg-[#070b14] border border-slate-200/80 dark:border-slate-800/90 p-2 sm:p-4 select-none overflow-hidden transition-colors"
+      onDoubleClick={handleResetZoom}
     >
-      {/* Zoom and Pan Controls Toolbar */}
-      <div className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200/80 dark:border-slate-800 shadow-sm">
-        <button
-          type="button"
-          onClick={handleZoomIn}
-          aria-label="تكبير الخريطة"
-          title="تكبير"
-          className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
-        >
-          <ZoomIn className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={handleZoomOut}
-          disabled={zoom <= 1}
-          aria-label="تصغير الخريطة"
-          title="تصغير"
-          className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 transition-colors cursor-pointer"
-        >
-          <ZoomOut className="w-4 h-4" />
-        </button>
-        {zoom > 1 && (
+      {/* Subtle Zoom Status Pill (Shows current zoom level without buttons) */}
+      {zoom > 1.05 && (
+        <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs animate-in fade-in duration-150">
+          <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300" dir="ltr">
+            {zoom.toFixed(1)}x
+          </span>
           <button
             type="button"
-            onClick={handleReset}
-            aria-label="إعادة ضبط الحجم"
-            title="إعادة ضبط"
-            className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+            onClick={handleResetZoom}
+            aria-label="إعادة ضبط التكبير"
+            title="انقر نقراً مزدوجاً أو اضغط هنا لإعادة الضبط"
+            className="text-[10px] text-slate-400 hover:text-[#A42424] dark:hover:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3 h-3" />
+            <span className="hidden sm:inline">إعادة ضبط</span>
           </button>
-        )}
-        <span className="px-1.5 text-[10px] font-mono text-slate-400 font-bold" dir="ltr">
-          {zoom.toFixed(1)}x
-        </span>
-      </div>
+        </div>
+      )}
 
-      {/* Selected Country Pinned Banner (Always visible & never clipped) */}
+      {/* Selected Country Pinned Banner */}
       {selectedCountry && (
         <div className="mb-2 p-2.5 rounded-lg bg-rose-50/90 dark:bg-rose-950/40 border border-[#A42424]/40 dark:border-rose-500/40 flex items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
           <div className="flex items-center gap-2">
@@ -200,13 +153,11 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
         </div>
       )}
 
-      {/* Floating Smart Tooltip (Positioned above or below depending on boundary) */}
+      {/* Floating Smart Tooltip */}
       {hoveredCountry && tooltipPos && (
         <div
-          className={`absolute z-30 pointer-events-none px-3 py-2 rounded-lg bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xs text-white text-xs shadow-2xl border border-slate-700/60 whitespace-nowrap transition-transform duration-75 ${
-            tooltipPos.y < 85
-              ? 'translate-y-4' // Top country: show BELOW point to prevent clipping
-              : '-translate-y-full -mt-2' // Normal: show ABOVE point
+          className={`absolute z-30 pointer-events-none px-3 py-2 rounded-lg bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white text-xs shadow-xl border border-slate-700/60 whitespace-nowrap transition-transform duration-75 ${
+            tooltipPos.y < 85 ? 'translate-y-4' : '-translate-y-full -mt-2'
           }`}
           style={{
             left: `${Math.max(60, Math.min((containerRef.current?.clientWidth || 300) - 120, tooltipPos.x))}px`,
@@ -233,90 +184,117 @@ export default function WorldMap({ countries, activeCode, onSelectCountry }: Wor
         </div>
       )}
 
-      {/* SVG Map Container with Overflow Control & Pan Handlers */}
-      <div
-        className={`w-full overflow-hidden rounded-lg aspect-[16/9] max-h-[380px] flex items-center justify-center ${
-          zoom > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'
-        }`}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMoveMap}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <svg
-          viewBox={mapData.viewBox}
-          className="w-full h-full object-contain filter drop-shadow-xs transition-transform duration-100 ease-out"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'center center',
+      {/* Mercator Projection Map Canvas via react-simple-maps */}
+      <div className="w-full overflow-hidden rounded-xl aspect-[16/9] max-h-[390px] flex items-center justify-center">
+        <ComposableMap
+          projection="geoMercator"
+          projectionConfig={{
+            scale: 125,
+            center: [0, 20],
           }}
-          role="img"
-          aria-label="خريطة التوزيع الجغرافي للزيارات"
+          width={800}
+          height={460}
+          className="w-full h-full object-contain"
         >
-          <g>
-            {Object.entries(mapData.countries).map(([code, pathD]) => {
-              const country = countryMap.get(code);
-              const isSelected = activeCode?.toLowerCase() === code;
-              const hasTraffic = Boolean(country && country.count > 0);
-
-              let fillColor = 'var(--map-neutral, #e2e8f0)';
-              let strokeColor = 'var(--map-stroke, #cbd5e1)';
-
-              if (hasTraffic && country) {
-                const ratio = country.count / maxCount;
-                if (ratio > 0.6) {
-                  fillColor = '#A42424'; // Intense Crimson
-                } else if (ratio > 0.3) {
-                  fillColor = '#dc2626'; // Red-600
-                } else if (ratio > 0.1) {
-                  fillColor = '#f87171'; // Red-400
-                } else {
-                  fillColor = '#fca5a5'; // Red-300
-                }
-                strokeColor = '#7f1d1d';
+          <ZoomableGroup
+            zoom={zoom}
+            minZoom={1}
+            maxZoom={6}
+            center={center}
+            onMoveEnd={({ coordinates, zoom: nextZoom }) => {
+              if (typeof nextZoom === 'number') {
+                setZoom(nextZoom);
               }
-
-              if (isSelected) {
-                fillColor = '#b91c1c';
-                strokeColor = '#ffffff';
+              if (coordinates) {
+                setCenter(coordinates as [number, number]);
               }
+            }}
+          >
+            {/* Subtle Mercator Lat/Long Graticule Grid */}
+            <Graticule
+              stroke={isDark ? '#1e293b' : '#e2e8f0'}
+              strokeWidth={0.35}
+              strokeDasharray="2,3"
+            />
 
-              return (
-                <path
-                  key={code}
-                  id={code}
-                  d={pathD}
-                  className={`transition-colors duration-150 ${
-                    hasTraffic
-                      ? 'cursor-pointer hover:opacity-85 hover:stroke-white dark:hover:stroke-slate-200'
-                      : 'cursor-default'
-                  }`}
-                  style={{
-                    fill: fillColor,
-                    stroke: strokeColor,
-                    strokeWidth: isSelected ? '1.5' : hasTraffic ? '0.75' : '0.4',
-                  }}
-                  onMouseEnter={(e) => country && handleCountryMouseMove(e, country)}
-                  onMouseMove={(e) => country && handleCountryMouseMove(e, country)}
-                  onMouseLeave={handleCountryMouseLeave}
-                  onClick={() => country && handleCountryClick(country)}
-                />
-              );
-            })}
-          </g>
-        </svg>
+            <Geographies geography={geoData as any}>
+              {({ geographies }) =>
+                geographies.map((geo) => {
+                  const code = (geo.properties?.code || '').toLowerCase();
+                  const country = countryMap.get(code);
+                  const isSelected = activeCode?.toLowerCase() === code;
+                  const hasTraffic = Boolean(country && country.count > 0);
+
+                  let fillColor = isDark ? '#161f31' : '#e2e8f0';
+                  let strokeColor = isDark ? '#26334d' : '#cbd5e1';
+                  let strokeWidth = 0.35;
+
+                  if (hasTraffic && country) {
+                    const ratio = country.count / maxCount;
+                    if (ratio > 0.6) {
+                      fillColor = '#881337'; // Deep Wine Crimson
+                      strokeColor = '#4c0519';
+                    } else if (ratio > 0.3) {
+                      fillColor = '#A42424'; // Brand Crimson
+                      strokeColor = '#7f1d1d';
+                    } else if (ratio > 0.1) {
+                      fillColor = '#e11d48'; // Rich Rose Red
+                      strokeColor = '#9f1239';
+                    } else {
+                      fillColor = '#fb7185'; // Soft Rose
+                      strokeColor = '#f43f5e';
+                    }
+                    strokeWidth = 0.5;
+                  }
+
+                  if (isSelected) {
+                    fillColor = '#991b1b';
+                    strokeColor = '#ffffff';
+                    strokeWidth = 1.2;
+                  }
+
+                  return (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      fill={fillColor}
+                      stroke={strokeColor}
+                      strokeWidth={strokeWidth}
+                      className={`transition-colors duration-150 outline-none ${
+                        hasTraffic
+                          ? 'cursor-pointer hover:opacity-85 hover:stroke-white dark:hover:stroke-slate-200'
+                          : 'cursor-default'
+                      } ${
+                        !hasTraffic
+                          ? 'hover:fill-slate-300 dark:hover:fill-slate-800'
+                          : ''
+                      }`}
+                      style={{ outline: 'none' }}
+                      onMouseEnter={(e) => country && handleCountryMouseMove(e, country)}
+                      onMouseMove={(e) => country && handleCountryMouseMove(e, country)}
+                      onMouseLeave={handleCountryMouseLeave}
+                      onClick={() => country && handleCountryClick(country)}
+                    />
+                  );
+                })
+              }
+            </Geographies>
+          </ZoomableGroup>
+        </ComposableMap>
       </div>
 
-      {/* Map Legend (Corrected RTL Alignment: منخفض on right by light boxes, مرتفع on left by dark boxes) */}
-      <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-end text-[11px] text-slate-500 dark:text-slate-400">
+      {/* Map Legend: منخفض on right by light boxes, مرتفع on left by dark boxes */}
+      <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+        <span className="text-[10px] text-slate-400 hidden sm:inline">
+          التكبير والتصغير بإصبعين أو بدولاب الماوس
+        </span>
         <div className="flex items-center gap-2" dir="rtl">
           <span className="text-slate-400">منخفض</span>
           <div className="flex items-center gap-1" dir="ltr">
-            <span className="w-2.5 h-2.5 rounded-xs bg-[#fca5a5] inline-block" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-[#f87171] inline-block" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-[#dc2626] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-xs bg-[#881337] inline-block" />
             <span className="w-2.5 h-2.5 rounded-xs bg-[#A42424] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-xs bg-[#e11d48] inline-block" />
+            <span className="w-2.5 h-2.5 rounded-xs bg-[#fb7185] inline-block" />
           </div>
           <span className="text-slate-400">مرتفع</span>
         </div>

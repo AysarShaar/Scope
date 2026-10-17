@@ -97,15 +97,16 @@ export interface Overview {
 
 export function buildOverview(zone: Zone): Overview {
   const cur = groups(zone, "current")[0];
-  const prev = groups(zone, "previous")[0];
+  const hasPrevious = Array.isArray(zone.previous);
+  const prev = hasPrevious ? (zone.previous as Group[])[0] : undefined;
   const pageViews = num(cur?.count);
   const visits = num(cur?.sum?.visits);
   return {
     pageViews,
     visits,
     pagesPerVisit: visits > 0 ? round1(pageViews / visits) : null,
-    pageViewsDelta: computeDelta(pageViews, num(prev?.count)),
-    visitsDelta: computeDelta(visits, num(prev?.sum?.visits)),
+    pageViewsDelta: hasPrevious ? computeDelta(pageViews, num(prev?.count)) : { pct: null, kind: "none" },
+    visitsDelta: hasPrevious ? computeDelta(visits, num(prev?.sum?.visits)) : { pct: null, kind: "none" },
   };
 }
 
@@ -160,14 +161,21 @@ export function classifyTrend(views: number, prevViews: number): Trend {
 
 export function buildArticles(zone: Zone): Articles {
   const curRows = groups(zone, "current");
-  const prevRows = groups(zone, "previous");
+  const hasPrevious = Array.isArray(zone.previous);
+  const prevRows = hasPrevious ? (zone.previous as Group[]) : [];
   const cur = viewsById(curRows);
   const prev = viewsById(prevRows);
   const ids = new Set([...cur.keys(), ...prev.keys()]);
   const rows: ArticleRow[] = [...ids].map((id) => {
     const views = cur.get(id) ?? 0;
     const prevViews = prev.get(id) ?? 0;
-    return { id, views, prevViews, delta: computeDelta(views, prevViews), trend: classifyTrend(views, prevViews) };
+    return {
+      id,
+      views,
+      prevViews,
+      delta: hasPrevious ? computeDelta(views, prevViews) : { pct: null, kind: "none" },
+      trend: hasPrevious ? classifyTrend(views, prevViews) : "steady",
+    };
   });
   rows.sort((a, b) => b.views - a.views || b.prevViews - a.prevViews);
   return {
@@ -402,7 +410,14 @@ export interface AnalyticsResponse {
   success: true;
   configured: boolean;
   diagnostics: { hasToken: boolean; hasZoneId: boolean; tokenSource: string };
-  window: { timeRange: "today" | "7d" | "30d"; since: string; until: string; prevSince: string; prevUntil: string };
+  window: {
+    timeRange: "today" | "7d" | "30d";
+    hasPrevious?: boolean;
+    since: string;
+    until: string;
+    prevSince: string;
+    prevUntil: string;
+  };
   generatedAt: string;
   sections: ResponseSections;
 }

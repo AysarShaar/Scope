@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import {
   buildArticles,
   buildDelivery,
+  buildOverview,
   buildSections,
   classifySource,
   classifyTrend,
@@ -307,6 +308,38 @@ describe("time windows", () => {
       expect(q[n].query).toContain(PAGE_VIEW_FILTER);
     }
     expect(q.delivery.query).not.toContain("edgeResponseContentTypeName"); // cache = all traffic, not page views
+  });
+  it("30d lookback respects Cloudflare's 4w3d retention limit (no 8w4d queries)", () => {
+    const w = computeWindow("30d", now);
+    expect(w.hasPrevious).toBe(false);
+
+    const q = buildQueries(w, "zone");
+    // overview and articles must NOT query previous or require $prevSince
+    expect(q.overview.query).not.toContain("previous:");
+    expect(q.overview.query).not.toContain("$prevSince");
+    expect(q.overview.variables.prevSince).toBeUndefined();
+
+    expect(q.articles.query).not.toContain("previous:");
+    expect(q.articles.query).not.toContain("$prevSince");
+    expect(q.articles.variables.prevSince).toBeUndefined();
+
+    // buildOverview and buildArticles succeed cleanly without previous in zone
+    const ov = buildOverview({ current: [{ count: 50, sum: { visits: 20 } }] });
+    expect(ov.pageViews).toBe(50);
+    expect(ov.visits).toBe(20);
+    expect(ov.pageViewsDelta.kind).toBe("none");
+
+    const art = buildArticles({
+      current: [{ count: 30, dimensions: { clientRequestPath: "/news/sample-1" } }],
+    });
+    expect(art.rows).toHaveLength(1);
+    expect(art.rows[0].views).toBe(30);
+    expect(art.rows[0].delta.kind).toBe("none");
+    expect(art.rows[0].trend).toBe("steady");
+  });
+  it("today and 7d allow previous window since they fit within 4w3d", () => {
+    expect(computeWindow("today", now).hasPrevious).toBe(true);
+    expect(computeWindow("7d", now).hasPrevious).toBe(true);
   });
 });
 
