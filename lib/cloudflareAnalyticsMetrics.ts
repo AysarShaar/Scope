@@ -72,15 +72,81 @@ export interface CloudflareAnalyticsResponse {
   r2: CloudflareR2Metrics;
 }
 
-export function parseWorkersAdaptive(raw: any): CloudflareWorkersMetrics {
-  if (!raw || !raw.ok) {
+interface RawGraphQLResponse<T = unknown> {
+  ok?: boolean;
+  reason?: string;
+  data?: {
+    viewer?: {
+      accounts?: Array<T>;
+    };
+  };
+}
+
+interface RawWorkersAccount {
+  workersInvocationsAdaptive?: RawWorkersInvocationItem[];
+}
+
+interface RawWorkersInvocationItem {
+  sum?: {
+    requests?: number | null;
+    errors?: number | null;
+    subrequests?: number | null;
+    cpuTime?: number | null;
+    cpuTimeUs?: number | null;
+  };
+  quantiles?: {
+    cpuTimeP50?: number | null;
+    cpuTimeP99?: number | null;
+  };
+  dimensions?: {
+    status?: string | null;
+    scriptName?: string | null;
+  };
+}
+
+interface RawR2Account {
+  r2OperationsAdaptiveGroups?: RawR2OperationItem[];
+  r2BandwidthUsageAdaptiveGroups?: RawR2BandwidthItem[];
+}
+
+interface RawR2OperationItem {
+  sum?: {
+    requests?: number | null;
+    operations?: number | null;
+    bytesIn?: number | null;
+    bytesOut?: number | null;
+  };
+  dimensions?: {
+    operationType?: string | null;
+    actionType?: string | null;
+    status?: string | null;
+    actionStatus?: string | null;
+    bucketName?: string | null;
+  };
+}
+
+interface RawR2BandwidthItem {
+  sum?: {
+    uploadBytes?: number | null;
+    downloadBytes?: number | null;
+    bytesIn?: number | null;
+    bytesOut?: number | null;
+  };
+  dimensions?: {
+    bucketName?: string | null;
+  };
+}
+
+export function parseWorkersAdaptive(raw: unknown): CloudflareWorkersMetrics {
+  const response = raw as RawGraphQLResponse<RawWorkersAccount> | null | undefined;
+  if (!response || !response.ok) {
     return {
       status: 'unavailable',
-      reason: raw?.reason || 'بيانات Workers غير متوفرة',
+      reason: response?.reason || 'بيانات Workers غير متوفرة',
     };
   }
 
-  const account = raw.data?.viewer?.accounts?.[0];
+  const account = response.data?.viewer?.accounts?.[0];
   const items = account?.workersInvocationsAdaptive;
   if (!items || !Array.isArray(items)) {
     return {
@@ -137,7 +203,7 @@ export function parseWorkersAdaptive(raw: any): CloudflareWorkersMetrics {
     .map(([status, count]) => ({
       status,
       count,
-      percentage: totalRequests > 0 ? Number(((count / totalRequests) * 100).toFixed(1)) : 0,
+      percentage: calculatePercentage(count, totalRequests, 1),
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -165,15 +231,16 @@ export function parseWorkersAdaptive(raw: any): CloudflareWorkersMetrics {
   };
 }
 
-export function parseR2Adaptive(rawOps: any, rawBandwidth?: any): CloudflareR2Metrics {
-  if (!rawOps || !rawOps.ok) {
+export function parseR2Adaptive(rawOps: unknown, rawBandwidth?: unknown): CloudflareR2Metrics {
+  const opsResponse = rawOps as RawGraphQLResponse<RawR2Account> | null | undefined;
+  if (!opsResponse || !opsResponse.ok) {
     return {
       status: 'unavailable',
-      reason: rawOps?.reason || 'بيانات R2 Storage غير متوفرة',
+      reason: opsResponse?.reason || 'بيانات R2 Storage غير متوفرة',
     };
   }
 
-  const account = rawOps.data?.viewer?.accounts?.[0];
+  const account = opsResponse.data?.viewer?.accounts?.[0];
   const opsItems = account?.r2OperationsAdaptiveGroups;
   if (!opsItems || !Array.isArray(opsItems)) {
     return {
@@ -190,7 +257,6 @@ export function parseR2Adaptive(rawOps: any, rawBandwidth?: any): CloudflareR2Me
   const statusMap = new Map<string, number>();
   const bucketMap = new Map<string, { operations: number; bytesIn: number; bytesOut: number }>();
 
-  // Process operations items
   for (const item of opsItems) {
     const count = Number(item.sum?.requests || item.sum?.operations || 0);
     const bIn = Number(item.sum?.bytesIn || 0);
@@ -200,14 +266,8 @@ export function parseR2Adaptive(rawOps: any, rawBandwidth?: any): CloudflareR2Me
     bytesIn += bIn;
     bytesOut += bOut;
 
-    // Normalizing operationType / actionType (e.g. PutObject -> PUT, GetObject -> GET)
-    let op = String(item.dimensions?.operationType || item.dimensions?.actionType || 'OTHER');
-    if (op.toLowerCase().includes('get')) op = 'GET';
-    else if (op.toLowerCase().includes('put')) op = 'PUT';
-    else if (op.toLowerCase().includes('delete')) op = 'DELETE';
-    else if (op.toLowerCase().includes('list')) op = 'LIST';
-    else if (op.toLowerCase().includes('head')) op = 'HEAD';
-    opTypeMap.set(op, (opTypeMap.get(op) || 0) + count);
+    const operationType = normalizeR2Operation(item.dimensions?.operationType || item.dimensions?.actionType);
+    opTypeMap.set(operationType, (opTypeMap.get(operationType) || 0) + count);
 
     const status = String(item.dimensions?.actionStatus || item.dimensions?.status || 'success');
     statusMap.set(status, (statusMap.get(status) || 0) + count);
@@ -220,9 +280,9 @@ export function parseR2Adaptive(rawOps: any, rawBandwidth?: any): CloudflareR2Me
     bucketMap.set(bucket, existing);
   }
 
-  // If bandwidth dataset provided extra transfer volumes
-  if (rawBandwidth?.ok) {
-    const bwItems = rawBandwidth.data?.viewer?.accounts?.[0]?.r2BandwidthUsageAdaptiveGroups;
+  const bwResponse = rawBandwidth as RawGraphQLResponse<RawR2Account> | null | undefined;
+  if (bwResponse?.ok) {
+    const bwItems = bwResponse.data?.viewer?.accounts?.[0]?.r2BandwidthUsageAdaptiveGroups;
     if (Array.isArray(bwItems)) {
       for (const item of bwItems) {
         const u = Number(item.sum?.uploadBytes || item.sum?.bytesIn || 0);
@@ -243,7 +303,7 @@ export function parseR2Adaptive(rawOps: any, rawBandwidth?: any): CloudflareR2Me
     .map(([operationType, count]) => ({
       operationType,
       count,
-      percentage: totalOperations > 0 ? Number(((count / totalOperations) * 100).toFixed(1)) : 0,
+      percentage: calculatePercentage(count, totalOperations, 1),
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -251,7 +311,7 @@ export function parseR2Adaptive(rawOps: any, rawBandwidth?: any): CloudflareR2Me
     .map(([status, count]) => ({
       status,
       count,
-      percentage: totalOperations > 0 ? Number(((count / totalOperations) * 100).toFixed(1)) : 0,
+      percentage: calculatePercentage(count, totalOperations, 1),
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -280,7 +340,22 @@ export function parseR2Adaptive(rawOps: any, rawBandwidth?: any): CloudflareR2Me
 export function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const val = (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1);
-  return `${val} ${units[i] || 'B'}`;
+  const exponent = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const val = (bytes / Math.pow(1024, exponent)).toFixed(exponent === 0 ? 0 : 1);
+  return `${val} ${units[exponent]}`;
+}
+
+function normalizeR2Operation(rawOp?: string | null): string {
+  const op = String(rawOp || 'OTHER').toLowerCase();
+  if (op.includes('get')) return 'GET';
+  if (op.includes('put')) return 'PUT';
+  if (op.includes('delete')) return 'DELETE';
+  if (op.includes('list')) return 'LIST';
+  if (op.includes('head')) return 'HEAD';
+  return String(rawOp || 'OTHER');
+}
+
+function calculatePercentage(count: number, total: number, decimals = 1): number {
+  if (total <= 0) return 0;
+  return Number(((count / total) * 100).toFixed(decimals));
 }

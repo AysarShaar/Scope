@@ -36,6 +36,18 @@ export interface D1PreparedStatementLike {
   run(): Promise<D1Result<never>>;
 }
 
+export interface SqliteStatementLike {
+  all(...params: unknown[]): unknown[];
+  get(...params: unknown[]): unknown;
+  run(...params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
+  setReturnArrays(value: boolean): void;
+}
+
+export interface SqliteDatabaseLike {
+  prepare(sql: string): SqliteStatementLike;
+  exec(sql: string): void;
+}
+
 export interface LocalD1DatabaseLike {
   prepare(sql: string): D1PreparedStatementLike;
   batch<T = D1Row>(statements: D1PreparedStatementLike[]): Promise<D1Result<T>[]>;
@@ -50,25 +62,28 @@ function resolveDbPath(): string {
 
 let _adapter: LocalD1DatabaseLike | null = null;
 
-export function createLocalD1Adapter(customDb?: any): LocalD1DatabaseLike {
-  let sqliteDb: any = customDb;
+function initSqliteDatabase(customDb?: SqliteDatabaseLike): SqliteDatabaseLike {
+  if (customDb) return customDb;
 
-  if (!sqliteDb) {
-    const dbPath = resolveDbPath();
-    if (!fs.existsSync(dbPath)) {
-      throw new Error(`[localD1Adapter] Database file not found at ${dbPath}`);
-    }
-
-    let DatabaseSync: any;
-    try {
-      ({ DatabaseSync } = require("node:sqlite"));
-    } catch {
-      throw new Error("[localD1Adapter] node:sqlite module not available");
-    }
-
-    sqliteDb = new DatabaseSync(dbPath);
-    console.log(`[localD1Adapter] Using local SQLite: ${dbPath}`);
+  const dbPath = resolveDbPath();
+  if (!fs.existsSync(dbPath)) {
+    throw new Error(`[localD1Adapter] Database file not found at ${dbPath}`);
   }
+
+  let DatabaseSync: new (path: string) => SqliteDatabaseLike;
+  try {
+    ({ DatabaseSync } = require("node:sqlite"));
+  } catch {
+    throw new Error("[localD1Adapter] node:sqlite module not available");
+  }
+
+  const db = new DatabaseSync(dbPath);
+  console.log(`[localD1Adapter] Using local SQLite: ${dbPath}`);
+  return db;
+}
+
+export function createLocalD1Adapter(customDb?: SqliteDatabaseLike): LocalD1DatabaseLike {
+  const sqliteDb = initSqliteDatabase(customDb);
 
   function makeStmt(sql: string, boundValues: unknown[] = []): D1PreparedStatementLike {
     const stmt: D1PreparedStatementLike = {

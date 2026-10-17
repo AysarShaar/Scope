@@ -5,53 +5,62 @@ import { CloudflareEnv } from "./cloudflare";
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+export type SystemRole = "admin" | "editor_in_chief" | "editor";
+
 export type AuthResult = {
   isValid: boolean;
-  systemRole: "admin" | "editor_in_chief" | "editor";
+  systemRole: SystemRole;
   editorId?: string;
   editorName?: string;
   email?: string;
 };
 
-export async function findEditorByEmail(
-  email: string,
-  env: CloudflareEnv | null,
-): Promise<{
+export interface EditorRecord {
   id: string;
   name: string;
   role: string;
-  systemRole: "admin" | "editor_in_chief" | "editor";
+  systemRole: SystemRole;
   email: string;
-} | null> {
+}
+
+const INVALID_AUTH_RESULT: AuthResult = { isValid: false, systemRole: "editor" };
+
+export function getAdminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export async function findEditorByEmail(
+  email: string,
+  env: CloudflareEnv | null,
+): Promise<EditorRecord | null> {
   const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail) return null;
+  if (!cleanEmail || !env?.DB) return null;
 
-  if (env?.DB) {
-    try {
-      const db = getDb(env.DB);
-      const rows = await db
-        .select()
-        .from(editors)
-        .where(eq(editors.email, cleanEmail))
-        .limit(1);
+  try {
+    const db = getDb(env.DB);
+    const rows = await db
+      .select()
+      .from(editors)
+      .where(eq(editors.email, cleanEmail))
+      .limit(1);
 
-      if (rows[0]) {
-        return {
-          id: rows[0].id,
-          name: rows[0].name,
-          role: rows[0].role,
-          systemRole:
-            (rows[0].systemRole as "admin" | "editor_in_chief" | "editor") ||
-            "editor",
-          email: rows[0].email || cleanEmail,
-        };
-      }
-    } catch (e) {
-      console.error("[auth] DB error finding editor by email:", e);
-    }
+    const match = rows[0];
+    if (!match) return null;
+
+    return {
+      id: match.id,
+      name: match.name,
+      role: match.role,
+      systemRole: (match.systemRole as SystemRole) || "editor",
+      email: match.email || cleanEmail,
+    };
+  } catch (error) {
+    console.error("[auth] DB error finding editor by email:", error);
+    return null;
   }
-
-  return null;
 }
 
 export async function authenticateRequest(
@@ -59,45 +68,38 @@ export async function authenticateRequest(
   env: CloudflareEnv | null,
 ): Promise<AuthResult> {
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    return { isValid: false, systemRole: "editor" };
-  }
+  if (!secret) return INVALID_AUTH_RESULT;
 
   try {
     const token = await getToken({ req: request, secret });
-    if (token && token.email) {
-      const email = token.email.toLowerCase().trim();
-      const adminEmails = (process.env.ADMIN_EMAILS || "")
-        .split(",")
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
+    if (!token?.email) return INVALID_AUTH_RESULT;
 
-      if (adminEmails.includes(email)) {
-        return {
-          isValid: true,
-          systemRole: "admin",
-          editorId: (token.sub as string) || undefined,
-          editorName: (token.name as string) || token.email,
-          email,
-        };
-      }
+    const email = token.email.toLowerCase().trim();
+    const adminEmails = getAdminEmails();
 
-      const editorRecord = await findEditorByEmail(email, env);
-      if (editorRecord) {
-        return {
-          isValid: true,
-          systemRole: editorRecord.systemRole,
-          editorId: editorRecord.id,
-          editorName: editorRecord.name,
-          email,
-        };
-      }
+    if (adminEmails.includes(email)) {
+      return {
+        isValid: true,
+        systemRole: "admin",
+        editorId: (token.sub as string) || undefined,
+        editorName: (token.name as string) || token.email,
+        email,
+      };
+    }
 
-      return { isValid: false, systemRole: "editor" };
+    const editorRecord = await findEditorByEmail(email, env);
+    if (editorRecord) {
+      return {
+        isValid: true,
+        systemRole: editorRecord.systemRole,
+        editorId: editorRecord.id,
+        editorName: editorRecord.name,
+        email,
+      };
     }
   } catch (err) {
     console.error("[auth] authenticateRequest error:", err);
   }
 
-  return { isValid: false, systemRole: "editor" };
+  return INVALID_AUTH_RESULT;
 }

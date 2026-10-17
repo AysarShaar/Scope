@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { getCloudflareEnv } from './cloudflare';
-import { findEditorByEmail } from './auth';
+import { findEditorByEmail, getAdminEmails } from './auth';
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim() || '';
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() || '';
@@ -11,13 +11,6 @@ export const isGoogleConfigured = Boolean(
   googleClientSecret &&
   !googleClientId.includes('your-google-client-id')
 );
-
-function getAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 export const authOptions: NextAuthOptions = {
   providers: [
