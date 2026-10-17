@@ -712,7 +712,6 @@ export default function AnalyticsDashboard() {
                               <span className="font-mono tabular-nums font-bold text-slate-900 dark:text-white">
                                 {art.views.toLocaleString()}
                               </span>
-                              <DeltaChip delta={art.delta} />
                             </div>
 
                             <div className="flex-1 sm:flex-initial h-10 sm:h-9 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40 text-xs text-emerald-700 dark:text-emerald-300">
