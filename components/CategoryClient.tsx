@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from './NavLink';
-import { useRouter } from 'next/navigation';
 import {
   Newspaper,
   TrendingUp,
@@ -11,10 +10,7 @@ import {
   Atom,
   Search,
   Clock,
-  ArrowRight,
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
   ShieldCheck,
   Compass,
   Layers,
@@ -59,7 +55,6 @@ export default function CategoryClient({
   hasMore,
   breaking: breakingNews,
 }: CategoryClientProps) {
-  const router = useRouter();
   const { lang, dir, t, toggleLang } = useLanguage();
   const [isLiveOpen, setIsLiveOpen] = useState(false);
 
@@ -68,7 +63,7 @@ export default function CategoryClient({
   const [totalCount, setTotalCount] = useState(total);
   const [pagesCount, setPagesCount] = useState(totalPages);
   const [hasMoreItems, setHasMoreItems] = useState(hasMore);
-  const [isLoadingPage, setIsLoadingPage] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
     setCurrentPage(page);
@@ -78,53 +73,47 @@ export default function CategoryClient({
     setHasMoreItems(hasMore);
   }, [slug, page, articles, total, totalPages, hasMore]);
 
-  const goToPage = async (newPage: number) => {
-    if (newPage < 1 || (newPage > pagesCount && pagesCount > 0)) return;
-    if (newPage === 1) {
-      setCurrentPage(1);
-      setArticleList(articles);
-      setTotalCount(total);
-      setPagesCount(totalPages);
-      setHasMoreItems(hasMore);
-      router.push(`/category/${slug}`, { scroll: false });
-      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    setIsLoadingPage(true);
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMoreItems) return;
+    const nextPage = currentPage + 1;
+    setIsLoadingMore(true);
     try {
-      const res = await fetch(`/api/articles?category=${encodeURIComponent(slug)}&page=${newPage}&limit=20`);
+      const res = await fetch(`/api/articles?category=${encodeURIComponent(slug)}&page=${nextPage}&limit=20`);
       if (res.ok) {
         const data = await res.json();
-        if (data.articles) {
-          setArticleList(data.articles);
-          setCurrentPage(newPage);
-          setTotalCount(data.total);
-          setPagesCount(data.totalPages);
-          setHasMoreItems(data.hasMore);
-          router.push(`/category/${slug}?page=${newPage}`, { scroll: false });
-          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        const incomingArticles: ScopeArticle[] = Array.isArray(data.articles)
+          ? data.articles
+          : Array.isArray(data.data)
+          ? data.data
+          : [];
+
+        if (incomingArticles.length > 0) {
+          setArticleList((prev) => {
+            const existingIds = new Set(prev.map((a) => a.id));
+            const newItems = incomingArticles.filter((a) => !existingIds.has(a.id));
+            return [...prev, ...newItems];
+          });
         }
+
+        const pagination = data.pagination || {};
+        const total = pagination.total ?? data.total ?? totalCount;
+        const totalPages = pagination.totalPages ?? data.totalPages ?? pagesCount;
+        const hasMore = pagination.hasMore ?? data.hasMore ?? (incomingArticles.length === 20 && nextPage < totalPages);
+
+        setCurrentPage(nextPage);
+        setTotalCount(total);
+        setPagesCount(totalPages);
+        setHasMoreItems(Boolean(hasMore && incomingArticles.length > 0));
       }
     } catch (err) {
-      console.error('[CategoryClient] pagination fetch error:', err);
+      console.error('[CategoryClient] load more fetch error:', err);
     } finally {
-      setIsLoadingPage(false);
+      setIsLoadingMore(false);
     }
   };
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const urlParams = new URLSearchParams(window.location.search);
-    const p = parseInt(urlParams.get('page') || '1', 10);
-    if (p > 1) {
-      goToPage(p);
-    }
-  }, []);
-
   const categoryName = categoryTranslations[slug]?.[lang] || slug;
   const CategoryIcon = CATEGORY_ICONS[slug] || Newspaper;
-  const ForwardArrow = dir === 'rtl' ? ArrowLeft : ArrowRight;
-  const BackArrow = dir === 'rtl' ? ArrowRight : ArrowLeft;
 
   return (
     <div
@@ -162,7 +151,7 @@ export default function CategoryClient({
             </p>
           </div>
         ) : (
-          <div className={`space-y-8 transition-opacity duration-200 ${isLoadingPage ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
+          <div className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
               {articleList.map((art) => (
                 <Link
@@ -204,49 +193,28 @@ export default function CategoryClient({
               ))}
             </div>
 
-            <div className="pt-6 pb-2 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                {lang === 'AR' ? (
-                  <>
-                    عرض صفحة <span className="font-bold text-slate-900 dark:text-white">{currentPage}</span> من أصل{' '}
-                    <span className="font-bold text-slate-900 dark:text-white">{pagesCount}</span> صفحة
-                  </>
-                ) : (
-                  <>
-                    Page <span className="font-bold text-slate-900 dark:text-white">{currentPage}</span> of{' '}
-                    <span className="font-bold text-slate-900 dark:text-white">{pagesCount}</span>
-                  </>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
+            {hasMoreItems && (
+              <div className="pt-8 pb-4 flex justify-center">
                 <button
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage <= 1 || isLoadingPage}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    currentPage <= 1 || isLoadingPage
-                      ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800/40 text-slate-400'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-2xs'
-                  }`}
+                  type="button"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="px-8 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-[#A42424] hover:bg-[#8B1E1E] text-white shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <BackArrow className="w-3.5 h-3.5" />
-                  <span>{lang === 'AR' ? 'الصفحة السابقة' : 'Previous Page'}</span>
-                </button>
-
-                <button
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={(currentPage >= pagesCount && !hasMoreItems) || isLoadingPage}
-                  className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    (currentPage >= pagesCount && !hasMoreItems) || isLoadingPage
-                      ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800/40 text-slate-400'
-                      : 'bg-[#A42424] hover:bg-[#8B1E1E] text-white shadow-sm hover:shadow'
-                  }`}
-                >
-                  <span>{lang === 'AR' ? 'الصفحة التالية' : 'Next Page'}</span>
-                  <ForwardArrow className="w-3.5 h-3.5" />
+                  {isLoadingMore ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>{lang === 'AR' ? 'جارٍ التحميل...' : 'Loading...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{t.categoryView.loadMore}</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
-            </div>
+            )}
           </div>
         )}
       </main>

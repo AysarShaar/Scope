@@ -74,6 +74,7 @@ export interface Translations {
     publishNew: string;
     prevPage: string;
     nextPage: string;
+    loadMore: string;
     editorDefault: string;
   };
   drawer: {
@@ -215,6 +216,7 @@ export const translations: Record<Language, Translations> = {
       publishNew: '',
       prevPage: 'السابق',
       nextPage: 'التالي',
+      loadMore: 'عرض المزيد',
       editorDefault: 'محرر SCOPE',
     },
     drawer: {
@@ -354,6 +356,7 @@ export const translations: Record<Language, Translations> = {
       publishNew: '',
       prevPage: 'Previous',
       nextPage: 'Next',
+      loadMore: 'Show More',
       editorDefault: 'SCOPE Editor',
     },
     drawer: {

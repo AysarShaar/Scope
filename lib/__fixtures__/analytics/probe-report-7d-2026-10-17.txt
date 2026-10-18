@@ -1,0 +1,26 @@
+== 1. SCHEMA (httpRequestsAdaptiveGroups) ==
+introspection failed: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+
+== 2. DATASET LIMITS REPORTED BY CLOUDFLARE ==
+not exposed: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+
+== 3. WHICH WINDOWS THE PLAN ACCEPTS (same page-view query, 1 row) ==
+  1 day    REJECTED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  7 days   REJECTED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  30 days  REJECTED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  24h window ending 2 days ago: REJECTED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.  (tells us how far back data goes)
+
+== 4. PRODUCTION QUERIES, range=7d ==
+  window 2026-10-10T11:18:33.584Z -> 2026-10-17T11:18:33.584Z  (previous 2026-10-03T11:18:33.584Z -> 2026-10-10T11:18:33.584Z)
+  overview   FAILED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  articles   FAILED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  sources    FAILED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  countries  FAILED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  devices    FAILED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+  delivery   FAILED: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+
+== 5. CROSS-CHECK: Cloudflare's own daily rollup (httpRequests1dGroups) ==
+  not available: Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255.
+
+wrote lib/__fixtures__/analytics/real-7d-2026-10-17.json  (no token / zone id inside)
+Next: run the tests (npm test). Every real-*.json is replayed through the same invariants.

@@ -1,0 +1,42 @@
+{
+ "meta": {
+  "synthetic": false,
+  "recordedAt": "2026-10-17T11:18:33.599Z",
+  "window": {
+   "timeRange": "7d",
+   "hasPrevious": true,
+   "since": "2026-10-10T11:18:33.584Z",
+   "until": "2026-10-17T11:18:33.584Z",
+   "prevSince": "2026-10-03T11:18:33.584Z",
+   "prevUntil": "2026-10-10T11:18:33.584Z"
+  },
+  "schemaFacts": null,
+  "crossCheckDaily": null
+ },
+ "raw": {
+  "overview": {
+   "ok": false,
+   "reason": "Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255."
+  },
+  "articles": {
+   "ok": false,
+   "reason": "Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255."
+  },
+  "sources": {
+   "ok": false,
+   "reason": "Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255."
+  },
+  "countries": {
+   "ok": false,
+   "reason": "Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255."
+  },
+  "devices": {
+   "ok": false,
+   "reason": "Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255."
+  },
+  "delivery": {
+   "ok": false,
+   "reason": "Cannot convert argument to a ByteString because the character at index 7 has a value of 8230 which is greater than 255."
+  }
+ }
+}

@@ -147,6 +147,7 @@ async function listArticles(request: NextRequest) {
         ? "no-store, no-cache, must-revalidate"
         : "public, s-maxage=60, stale-while-revalidate=300";
 
+      const mapped = rows.map((r) => rowToArticle(r, isFull));
       return NextResponse.json(
         {
           success: true,
@@ -161,7 +162,8 @@ async function listArticles(request: NextRequest) {
             pendingCount: includePending ? pendingCount : 0,
           },
           count: rows.length,
-          data: rows.map((r) => rowToArticle(r, isFull)),
+          articles: mapped,
+          data: mapped,
         },
         {
           headers: {
