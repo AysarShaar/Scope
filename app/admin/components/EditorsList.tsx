@@ -378,19 +378,19 @@ export default function EditorsList({
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
           <input
             value={avatarUrl}
             onChange={e => setAvatarUrl(e.target.value)}
             placeholder="رابط الصورة الشخصية (اختياري)..."
             dir="ltr"
-            className="w-72 px-3 py-1.5 bg-slate-50 dark:bg-[#121624] border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 transition-colors"
+            className="w-full sm:w-72 px-3 py-1.5 bg-slate-50 dark:bg-[#121624] border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-slate-400 dark:focus:border-slate-600 transition-colors"
           />
 
           <button
             type="submit"
             disabled={saving || !name.trim() || !role.trim() || !email.trim()}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-semibold rounded-lg transition-colors disabled:opacity-40 cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-semibold rounded-lg transition-colors disabled:opacity-40 cursor-pointer"
           >
             {saving ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
             <span>إضافة العضو</span>
@@ -408,7 +408,129 @@ export default function EditorsList({
         </div>
       ) : (
         <div className="bg-white dark:bg-[#0c101c] border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
-          <div className="overflow-x-auto">
+          {/* Mobile Cards View (no horizontal scroll) */}
+          <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+            {editors.map(editor => {
+              const sRole = editor.systemRole || 'editor';
+              const roleLabel =
+                sRole === 'admin'
+                  ? 'مدير نظام'
+                  : sRole === 'editor_in_chief'
+                  ? 'رئيس تحرير'
+                  : 'محرر';
+
+              const permsCount = Array.isArray(editor.permissions)
+                ? editor.permissions.length
+                : sRole === 'admin'
+                ? ADMIN_PERMISSIONS.length
+                : sRole === 'editor_in_chief'
+                ? EDITOR_IN_CHIEF_PERMISSIONS.length
+                : 0;
+
+              const isCurrentUser = isSelf(editor.id);
+
+              return (
+                <div key={editor.id} className="p-3.5 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {editor.avatarUrl ? (
+                        <Image
+                          src={editor.avatarUrl}
+                          alt={editor.name}
+                          width={36}
+                          height={36}
+                          className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300 text-sm shrink-0">
+                          {editor.name.charAt(0)}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
+                            {editor.name}
+                          </span>
+                          {isCurrentUser && (
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                              (حسابك الحالي)
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          {editor.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`text-[11px] font-medium px-2 py-0.5 rounded shrink-0 ${
+                        sRole === 'admin'
+                          ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/50'
+                          : sRole === 'editor_in_chief'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                          : 'bg-slate-100/70 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800'
+                      }`}
+                    >
+                      {roleLabel}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0 text-slate-500 dark:text-slate-400">
+                      <span className="text-[11px] text-slate-400 shrink-0">البريد:</span>
+                      <span className="font-mono text-[11px] truncate" dir="ltr">
+                        {editor.email || '—'}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openPermModal(editor)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs font-semibold cursor-pointer shrink-0"
+                    >
+                      <Shield size={12} className="text-[#A42424]" />
+                      <span>{permsCount} / 10 صلاحيات</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100/80 dark:border-slate-800/60">
+                    <button
+                      type="button"
+                      onClick={() => openPermModal(editor)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <Key size={13} className="text-[#A42424]" />
+                      <span>الصلاحيات</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(editor)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    >
+                      <Edit2 size={13} className="text-slate-500" />
+                      <span>تعديل</span>
+                    </button>
+
+                    {!isCurrentUser && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(editor.id)}
+                        className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border border-transparent hover:border-rose-200 dark:hover:border-rose-900/60 transition-colors cursor-pointer"
+                        title="حذف العضو"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-xs text-right">
               <thead className="bg-slate-50/80 dark:bg-slate-900/40 text-slate-500 border-b border-slate-100 dark:border-slate-800/80">
                 <tr>
@@ -547,8 +669,8 @@ export default function EditorsList({
 
       {/* Permissions Modal */}
       {permEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl bg-white dark:bg-[#0c101c] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 text-slate-900 dark:text-white space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-[#0c101c] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-6 text-slate-900 dark:text-white space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/40 text-[#A42424] flex items-center justify-center">
@@ -676,11 +798,11 @@ export default function EditorsList({
                 ))}
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <span className="text-[11px] text-slate-500">
                   تسري الصلاحيات فوراً في قاعدة البيانات وسجل التدقيق.
                 </span>
-                <div className="flex gap-2">
+                <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setPermEditor(null)}
@@ -705,8 +827,8 @@ export default function EditorsList({
 
       {/* Edit Basic Data Modal */}
       {editingEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-white dark:bg-[#0c101c] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-5 text-slate-900 dark:text-white space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white dark:bg-[#0c101c] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-4 sm:p-5 text-slate-900 dark:text-white space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <h3 className="font-bold text-sm">تعديل بيانات المحرر الأساسية</h3>
               <button

@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
     "build": "next build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "db:pull": "wrangler d1 export DB --remote --output=db/remote_dump.sql -y && wrangler d1 execute DB --local --file=db/remote_dump.sql",
+    "db:pull": "node scripts/pull-db.mjs",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "start": "next start",
@@ -43,21 +43,21 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-simple-maps": "^5.0.5",
-    "sanitize-html": "^2.18.0"
+    "sanitize-html": "^2.18.0",
+    "@tailwindcss/postcss": "4.1.11",
+    "tailwindcss": "4.1.11"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240208.0",
     "@next/eslint-plugin-next": "^16.3.8",
-    "@tailwindcss/postcss": "4.1.11",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/react": "19.3.0",
     "@types/react-dom": "^19",
     "@types/react-simple-maps": "^3.0.6",
     "@typescript-eslint/parser": "^8.71.0",
     "drizzle-kit": "^0.18.1",
     "eslint": "9.39.1",
-    "tailwindcss": "4.1.11",
     "typescript": "5.9.3",
     "vitest": "^3.2.4",
     "wrangler": "^4.147.0"
@@ -72,5 +72,19 @@
   },
   "overrides": {
     "eslint": "$eslint"
+  },
+  "allowScripts": {
+    "aws4fetch@1.0.20": true,
+    "ci-info@4.4.0": true,
+    "es5-ext@0.10.64": true,
+    "foreground-child@3.3.1": true,
+    "jackspeak@4.2.3": true,
+    "package-json-from-dist@1.0.1": true,
+    "path-scurry@2.0.2": true,
+    "path-to-regexp@6.3.0": true,
+    "tinyexec@0.3.2": true,
+    "yargs@18.2.0": true,
+    "@tailwindcss/oxide": true,
+    "esbuild@0.25.4": true
   }
 }

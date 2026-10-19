@@ -87,19 +87,6 @@ const nextConfig: NextConfig = {
     ];
   },
   transpilePackages: ['motion', 'react-simple-maps'],
-  webpack: (config, { dev }) => {
-    if (dev && process.env.DISABLE_HMR === 'true') {
-      config.watchOptions = {
-        ignored: /.*/,
-      };
-    } else if (dev) {
-      config.watchOptions = {
-        ...config.watchOptions,
-        ignored: ['**/.next/**', '**/node_modules/**'],
-      };
-    }
-    return config;
-  },
 };
 
 export default nextConfig;
