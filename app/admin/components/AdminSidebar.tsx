@@ -7,6 +7,7 @@ import Link from '../../../components/NavLink';
 import Image from 'next/image';
 import { useTheme } from '../../../context/ThemeContext';
 import { ScopeLogo } from '../../../components/ScopeLogo';
+import { can } from '../../../lib/permissions';
 
 export type AdminSection = 'dashboard' | 'articles' | 'special_articles' | 'breaking' | 'programs' | 'editors' | 'settings';
 
@@ -17,6 +18,7 @@ interface Props {
   onRefresh: () => void;
   isLoading: boolean;
   userRole: 'admin' | 'editor_in_chief' | 'editor';
+  permissions?: string[];
   isOpen?: boolean;
   onClose?: () => void;
   currentUser?: {
@@ -43,6 +45,7 @@ export default function AdminSidebar({
   onRefresh,
   isLoading,
   userRole,
+  permissions,
   isOpen = false,
   onClose,
   currentUser,
@@ -57,6 +60,16 @@ export default function AdminSidebar({
   };
 
   const filteredNav = NAV.filter(item => {
+    if (permissions !== undefined) {
+      if (item.id === 'dashboard') return can({ permissions }, 'analytics.view');
+      if (item.id === 'articles') return true;
+      if (item.id === 'special_articles') return can({ permissions }, 'articles.set_special');
+      if (item.id === 'breaking') return can({ permissions }, 'breaking.manage');
+      if (item.id === 'programs') return can({ permissions }, 'programs.manage');
+      if (item.id === 'editors') return can({ permissions }, 'editors.manage');
+      if (item.id === 'settings') return can({ permissions }, 'settings.live_stream');
+      return false;
+    }
     if (item.id === 'dashboard') return userRole === 'admin';
     if (userRole === 'admin') return true;
     if (userRole === 'editor_in_chief') return item.id !== 'editors';

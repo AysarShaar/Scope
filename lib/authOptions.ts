@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { getCloudflareEnv } from './cloudflare';
 import { findEditorByEmail, getAdminEmails } from './auth';
+import { ADMIN_PERMISSIONS } from './permissions';
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim() || '';
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() || '';
@@ -59,21 +60,35 @@ export const authOptions: NextAuthOptions = {
 
         if (adminEmails.includes(email)) {
           token.role = 'admin';
+          token.permissions = [...ADMIN_PERMISSIONS];
+          try {
+            const env = getCloudflareEnv();
+            const editorMatch = await findEditorByEmail(email, env);
+            if (editorMatch) {
+              token.editorId = editorMatch.id;
+              token.editorName = editorMatch.name;
+            }
+          } catch {
+            // Keep existing or token identity
+          }
         } else {
           try {
             const env = getCloudflareEnv();
             const editorMatch = await findEditorByEmail(email, env);
             if (editorMatch) {
               token.role = editorMatch.systemRole;
+              token.permissions = editorMatch.permissions;
               token.editorId = editorMatch.id;
               token.editorName = editorMatch.name;
             } else {
               delete token.role;
+              delete token.permissions;
               delete token.editorId;
               delete token.editorName;
             }
           } catch {
             delete token.role;
+            delete token.permissions;
             delete token.editorId;
             delete token.editorName;
           }
@@ -84,6 +99,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.role = token.role || 'editor';
+        session.user.permissions = token.permissions || [];
         session.user.editorId = token.editorId || undefined;
         session.user.editorName = token.editorName || session.user.name || undefined;
       }

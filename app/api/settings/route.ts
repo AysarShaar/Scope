@@ -6,8 +6,14 @@ import { authenticateRequest } from "../../../lib/auth";
 import { extractYouTubeId } from "../../../lib/youtube";
 import { errorMessage } from '../../../lib/errors';
 import { withEdgeCache } from "../../../lib/server/edgeCache";
+import { can } from "../../../lib/permissions";
 
 const PUBLIC_SETTINGS_KEYS = new Set(["live_stream_id"]);
+const ALLOWED_LIVE_STREAM_KEYS = new Set([
+  "live_stream_id",
+  "liveStreamId",
+  "live_stream_url",
+]);
 
 export async function GET(request: NextRequest) {
   // Anonymous visitors only get the public keys; logged-in requests bypass the cache (see edgeCache.ts).
@@ -23,29 +29,20 @@ async function readSettings(request: NextRequest) {
         const db = getDb(env.DB);
         const rows = await db.select().from(settings).all();
 
-        const auth = await authenticateRequest(request, env);
-        const isPrivileged =
-          auth.isValid &&
-          (auth.systemRole === "admin" || auth.systemRole === "editor_in_chief");
-
         const settingsMap: Record<string, string> = {
           live_stream_id: "",
         };
 
         for (const r of rows) {
           if (!r?.key) continue;
-          if (isPrivileged || PUBLIC_SETTINGS_KEYS.has(r.key)) {
+          if (PUBLIC_SETTINGS_KEYS.has(r.key)) {
             settingsMap[r.key] = r.value;
           }
         }
 
-        const cacheHeader = isPrivileged
-          ? "no-store, no-cache, must-revalidate"
-          : "public, s-maxage=300, stale-while-revalidate=600";
-
         return NextResponse.json(
           { success: true, data: settingsMap },
-          { headers: { "Cache-Control": cacheHeader } },
+          { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
         );
       } catch (err) {
         console.error("[settings DB read error]:", err);
@@ -87,12 +84,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+    if (!can(auth, "settings.live_stream")) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "غير مصرح: تعديل الإعدادات مقتصر على رئيس التحرير ومدير النظام",
+          error: "غير مصرح: ليس لديك صلاحية تعديل البث المباشر",
         },
         { status: 403 },
       );
@@ -106,38 +102,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entries: [string, string][] = [];
+    const rawEntries: [string, string][] = [];
     if (body.key && body.value !== undefined) {
-      entries.push([String(body.key), String(body.value)]);
+      rawEntries.push([String(body.key), String(body.value)]);
     } else {
       for (const [k, v] of Object.entries(body)) {
         if (v !== undefined && v !== null && typeof v !== "object") {
-          entries.push([k, String(v)]);
+          rawEntries.push([k, String(v)]);
         }
       }
     }
 
-    if (entries.length === 0) {
+    if (rawEntries.length === 0) {
       return NextResponse.json(
         { success: false, error: "لم يتم تحديد أي إعدادات للحفظ" },
         { status: 400 },
       );
     }
 
+    // Strict whitelist enforcement: under settings.live_stream, ONLY live stream keys are accepted.
+    // Any other key (such as cf_* or arbitrary config) is strictly rejected.
+    const normalizedEntries: [string, string][] = [];
+    for (const [k, v] of rawEntries) {
+      if (!ALLOWED_LIVE_STREAM_KEYS.has(k)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `المفتاح "${k}" غير مسموح به أو يتطلب صلاحية مخصصة مستقلة.`,
+          },
+          { status: 400 },
+        );
+      }
+      const val = extractYouTubeId(v) || v.trim();
+      normalizedEntries.push(["live_stream_id", val]);
+    }
+
     if (env?.DB) {
       const db = getDb(env.DB);
       const now = new Date().toISOString();
 
-      for (let [k, val] of entries) {
-        if (
-          k === "live_stream_id" ||
-          k === "liveStreamId" ||
-          k === "live_stream_url"
-        ) {
-          k = "live_stream_id";
-          val = extractYouTubeId(val) || val.trim();
-        }
-
+      for (const [k, val] of normalizedEntries) {
         await db
           .insert(settings)
           .values({ key: k, value: val, updatedAt: now })

@@ -4,12 +4,14 @@ import { eq } from "drizzle-orm";
 import { CloudflareEnv } from "./cloudflare";
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { Permission, ADMIN_PERMISSIONS, parseStoredPermissions } from "./permissions";
 
 export type SystemRole = "admin" | "editor_in_chief" | "editor";
 
 export type AuthResult = {
   isValid: boolean;
   systemRole: SystemRole;
+  permissions: Permission[];
   editorId?: string;
   editorName?: string;
   email?: string;
@@ -21,9 +23,10 @@ export interface EditorRecord {
   role: string;
   systemRole: SystemRole;
   email: string;
+  permissions: Permission[];
 }
 
-const INVALID_AUTH_RESULT: AuthResult = { isValid: false, systemRole: "editor" };
+const INVALID_AUTH_RESULT: AuthResult = { isValid: false, systemRole: "editor", permissions: [] };
 
 export function getAdminEmails(): string[] {
   return (process.env.ADMIN_EMAILS || "")
@@ -56,6 +59,7 @@ export async function findEditorByEmail(
       role: match.role,
       systemRole: (match.systemRole as SystemRole) || "editor",
       email: match.email || cleanEmail,
+      permissions: parseStoredPermissions(match.permissions),
     };
   } catch (error) {
     console.error("[auth] DB error finding editor by email:", error);
@@ -78,11 +82,13 @@ export async function authenticateRequest(
     const adminEmails = getAdminEmails();
 
     if (adminEmails.includes(email)) {
+      const editorRecord = await findEditorByEmail(email, env);
       return {
         isValid: true,
         systemRole: "admin",
-        editorId: (token.sub as string) || undefined,
-        editorName: (token.name as string) || token.email,
+        permissions: [...ADMIN_PERMISSIONS],
+        editorId: editorRecord?.id || (token.sub as string) || undefined,
+        editorName: editorRecord?.name || (token.name as string) || token.email,
         email,
       };
     }
@@ -92,6 +98,7 @@ export async function authenticateRequest(
       return {
         isValid: true,
         systemRole: editorRecord.systemRole,
+        permissions: editorRecord.permissions,
         editorId: editorRecord.id,
         editorName: editorRecord.name,
         email,

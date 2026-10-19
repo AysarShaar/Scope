@@ -9,6 +9,7 @@ import { authenticateRequest } from "../../../lib/auth";
 import { extractYouTubeId } from "../../../lib/youtube";
 import { errorMessage } from "../../../lib/errors";
 import { withEdgeCache } from "../../../lib/server/edgeCache";
+import { can } from "../../../lib/permissions";
 
 const LIST_EPISODES_PREVIEW = 4;
 
@@ -77,11 +78,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+    if (!can(auth, "programs.manage")) {
       return NextResponse.json(
         {
           success: false,
-          error: "غير مصرح: إضافة البرامج مقتصرة على رئيس التحرير ومدير النظام",
+          error: "غير مصرح: ليس لديك صلاحية إدارة البرامج والتغطيات",
         },
         { status: 403 },
       );

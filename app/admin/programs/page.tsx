@@ -8,7 +8,7 @@ import { ScopeShow } from '../../../data/scopeData';
 const ProgramsManager = dynamic(() => import('../components/ProgramsManager'), { ssr: false });
 
 export default function AdminProgramsPage() {
-  const { userRole, showToast } = useAdmin();
+  const { userRole, userPermissions, showToast } = useAdmin();
   const [programs, setPrograms] = useState<ScopeShow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -83,6 +83,7 @@ export default function AdminProgramsPage() {
       onUpdateProgram={handleUpdateProgram}
       onDeleteProgram={handleDeleteProgram}
       userRole={userRole}
+      permissions={userPermissions}
     />
   );
 }

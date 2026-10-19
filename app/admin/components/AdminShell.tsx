@@ -13,8 +13,13 @@ import type { EditorItem } from './EditorsList';
 
 type Toast = { text: string; type: 'success' | 'error' | 'info' };
 
+import { can as canCheck, Permission } from '../../../lib/permissions';
+
 export interface AdminContextType {
   userRole: 'admin' | 'editor_in_chief' | 'editor';
+  permissions: string[];
+  userPermissions: string[];
+  can: (permission: Permission) => boolean;
   editorId: string | null;
   currentUser: AdminUser;
   showToast: (text: string, type?: Toast['type']) => void;
@@ -43,6 +48,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [isLoading, setIsLoading] = useState(false);
   const [googleConfigured, setGoogleConfigured] = useState<boolean | null>(null);
   const [userRole, setUserRole] = useState<'admin' | 'editor_in_chief' | 'editor'>('editor');
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [editorId, setEditorId] = useState<string | null>(null);
   const [editors, setEditors] = useState<EditorItem[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -92,6 +98,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       .catch(() => {});
   }, []);
 
+  const can = useCallback((permission: Permission) => {
+    return canCheck({ permissions: userPermissions }, permission);
+  }, [userPermissions]);
+
   useEffect(() => {
     if (sessionStatus === 'loading') {
       setChecking(true);
@@ -102,6 +112,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       const role = (session.user as { role?: string })?.role;
       if (role === 'admin' || role === 'editor_in_chief' || role === 'editor') {
         setUserRole(role);
+      }
+      if (Array.isArray(session.user.permissions)) {
+        setUserPermissions(session.user.permissions);
       }
       const edId = (session.user as { editorId?: string })?.editorId;
       if (edId) setEditorId(edId);
@@ -120,6 +133,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           if (role === 'admin' || role === 'editor_in_chief' || role === 'editor') {
             setUserRole(role);
           }
+          if (Array.isArray(data.user.permissions)) {
+            setUserPermissions(data.user.permissions);
+          }
           if (data.user.editorId) setEditorId(data.user.editorId);
           setIsAuth(true);
           loadProfile();
@@ -135,6 +151,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     await signOut({ callbackUrl: '/admin' });
     setIsAuth(false);
     setUserRole('editor');
+    setUserPermissions([]);
     setEditorId(null);
   };
 
@@ -166,6 +183,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     name: currentEditor?.name || session?.user?.name || 'محرر المنصة',
     avatarUrl: currentEditor?.avatarUrl || session?.user?.image || null,
     role: userRole,
+    permissions: userPermissions,
     roleLabel:
       userRole === 'admin'
         ? 'مدير النظام'
@@ -271,6 +289,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const contextValue: AdminContextType = {
     userRole,
+    permissions: userPermissions,
+    userPermissions,
+    can,
     editorId,
     currentUser,
     showToast,
@@ -287,6 +308,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           onRefresh={loadProfile}
           isLoading={isLoading}
           userRole={userRole}
+          permissions={userPermissions}
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
           currentUser={currentUser}

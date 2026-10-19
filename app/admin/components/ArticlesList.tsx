@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ScopeArticle } from '../../../data/scopeData';
 import { IsoDatePicker } from './IsoDatePicker';
+import { can } from '../../../lib/permissions';
 
 const PAGE_SIZE = 10;
 
@@ -90,7 +91,8 @@ interface Props {
   onEdit: (a: ScopeArticle) => void;
   onDelete: (id: string, title: string) => void;
   onApprove?: (id: string, title: string) => Promise<void>;
-  userRole: 'admin' | 'editor_in_chief' | 'editor';
+  userRole?: 'admin' | 'editor_in_chief' | 'editor';
+  permissions?: string[];
   isSpecialOnly?: boolean;
 }
 
@@ -100,6 +102,7 @@ export default function ArticlesList({
   onDelete,
   onApprove,
   userRole,
+  permissions,
   isSpecialOnly = false,
 }: Props) {
   const searchParams = useSearchParams();
@@ -151,7 +154,15 @@ export default function ArticlesList({
   const [authorsList, setAuthorsList] = useState<string[]>([]);
 
   const searchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const canManageArticles = userRole === 'admin' || userRole === 'editor_in_chief';
+  const canApprove = permissions
+    ? can({ permissions }, 'articles.approve')
+    : userRole === 'admin' || userRole === 'editor_in_chief';
+  const canSetSpecial = permissions
+    ? can({ permissions }, 'articles.set_special')
+    : userRole === 'admin' || userRole === 'editor_in_chief';
+  const canDelete = permissions
+    ? can({ permissions }, 'articles.delete')
+    : userRole === 'admin' || userRole === 'editor_in_chief';
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
@@ -700,7 +711,7 @@ export default function ArticlesList({
 
                   {/* Action buttons positioned directly under image and title */}
                   <div className="mt-3.5 flex flex-wrap items-center gap-2">
-                    {isPending && canManageArticles && onApprove && (
+                    {isPending && canApprove && onApprove && (
                       <button
                         onClick={() => handleQuickApprove(art)}
                         disabled={approvingId === art.id}
@@ -719,7 +730,7 @@ export default function ArticlesList({
                       <Edit3 size={14} />
                       <span>تعديل</span>
                     </button>
-                    {canManageArticles && (
+                    {canSetSpecial && (
                       <button
                         onClick={() => handleToggleSpecial(art)}
                         disabled={togglingSpecialId === art.id}
@@ -745,14 +756,16 @@ export default function ArticlesList({
                         <Eye size={16} />
                       </a>
                     )}
-                    <button
-                      onClick={() => handleDeleteItem(art)}
-                      aria-label="حذف المادة"
-                      className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                      title="حذف المادة"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDeleteItem(art)}
+                        aria-label="حذف المادة"
+                        className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                        title="حذف المادة"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </li>
               );

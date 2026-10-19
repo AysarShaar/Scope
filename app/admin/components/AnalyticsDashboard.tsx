@@ -21,6 +21,7 @@ import { useAdmin } from './AdminShell';
 import { formatArticleArabicDate } from './ArticlesList';
 import WorldMap, { type WorldMapCountry } from './WorldMap';
 import CloudflareAnalyticsDashboard from './CloudflareAnalyticsDashboard';
+import { can } from '../../../lib/permissions';
 import type {
   AnalyticsResponse,
   ArticleRowWithMeta,
@@ -239,7 +240,10 @@ function toRows<T>(s: Shares<T>, map: (item: T) => Omit<ShareRowView, 'value' | 
 export default function AnalyticsDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { userRole } = useAdmin();
+  const { userRole, userPermissions } = useAdmin();
+  const canViewAnalytics = userPermissions
+    ? can({ permissions: userPermissions }, 'analytics.view')
+    : userRole === 'admin';
 
   const urlRange = searchParams.get('range') as TimeRange | null;
   const urlView = searchParams.get('view') as 'website' | 'cloudflare' | null;
@@ -296,8 +300,8 @@ export default function AnalyticsDashboard() {
   }, [timeRange]);
 
   useEffect(() => {
-    if (userRole === 'admin') fetchAnalytics();
-  }, [userRole, fetchAnalytics]);
+    if (canViewAnalytics) fetchAnalytics();
+  }, [canViewAnalytics, fetchAnalytics]);
 
   const s = data?.sections;
   const overview = s?.overview.status === 'ok' ? s.overview.data : null;
@@ -338,7 +342,7 @@ export default function AnalyticsDashboard() {
     return s.countries.data.other;
   }, [s?.countries]);
 
-  if (userRole !== 'admin') {
+  if (!canViewAnalytics) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center select-none" dir="rtl">
         <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-3">
@@ -346,7 +350,7 @@ export default function AnalyticsDashboard() {
         </div>
         <h2 className="text-base font-bold text-slate-900 dark:text-white">صلاحية الوصول مقيدة</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-          لوحة المؤشرات والتحليلات متاحة لمدير النظام فقط.
+          لوحة المؤشرات والتحليلات تتطلب صلاحية عرض التحليلات.
         </p>
         <Link
           href="/admin/articles"

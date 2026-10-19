@@ -7,6 +7,7 @@ import { BreakingItem } from "../../../data/scopeData";
 import { authenticateRequest } from "../../../lib/auth";
 import { errorMessage } from '../../../lib/errors';
 import { withEdgeCache } from "../../../lib/server/edgeCache";
+import { can } from "../../../lib/permissions";
 
 function rowToBreaking(row: typeof breaking.$inferSelect): BreakingItem {
   return {
@@ -71,11 +72,11 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
-    if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+    if (!can(auth, "breaking.manage")) {
       return NextResponse.json(
         {
           success: false,
-          error: "غير مصرح: يجب أن تكون مديراً أو رئيس تحرير للمتابعة",
+          error: "غير مصرح: ليس لديك صلاحية إدارة الأخبار العاجلة",
         },
         { status: 403 },
       );

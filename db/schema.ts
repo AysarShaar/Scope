@@ -34,6 +34,7 @@ export const editors = sqliteTable('editors', {
   email: text('email').notNull().unique(),
   role: text('role').notNull(),
   systemRole: text('system_role').notNull().default('editor'),
+  permissions: text('permissions').notNull().default('[]'),
   avatarUrl: text('avatar_url'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 });
@@ -73,6 +74,17 @@ export const settings = sqliteTable('settings', {
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
+export const permissionsAuditLog = sqliteTable('permissions_audit_log', {
+  id: text('id').primaryKey(),
+  actorId: text('actor_id').notNull(),
+  actorEmail: text('actor_email').notNull(),
+  targetEditorId: text('target_editor_id').notNull(),
+  action: text('action').notNull(), // 'grant' | 'revoke' | 'update'
+  permissionsBefore: text('permissions_before').notNull(),
+  permissionsAfter: text('permissions_after').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+});
+
 export type Article = typeof articles.$inferSelect;
 export type NewArticle = typeof articles.$inferInsert;
 export type BreakingNewsItem = typeof breaking.$inferSelect;
@@ -85,4 +97,6 @@ export type ProgramEpisodeRow = typeof episodes.$inferSelect;
 export type NewProgramEpisode = typeof episodes.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
+export type PermissionsAuditLog = typeof permissionsAuditLog.$inferSelect;
+export type NewPermissionsAuditLog = typeof permissionsAuditLog.$inferInsert;
 

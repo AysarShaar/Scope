@@ -5,13 +5,13 @@ import { getDb } from "../../../../../db/client";
 import { articles } from "../../../../../db/schema";
 import { authenticateRequest } from "../../../../../lib/auth";
 import { errorMessage } from "../../../../../lib/errors";
-
+import { can } from "../../../../../lib/permissions";
 
 type IdContext = { params: Promise<{ id: string }> };
 
 /**
  * Turns the "special" flag of an article on or off. The newest published special article is the one
- * shown in the home page's tall hero box. Restricted to the editor-in-chief and system admins.
+ * shown in the home page's tall hero box.
  */
 export async function PUT(request: NextRequest, { params }: IdContext) {
   const { id } = await params;
@@ -24,9 +24,9 @@ export async function PUT(request: NextRequest, { params }: IdContext) {
       { status: 401 },
     );
   }
-  if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+  if (!can(auth, "articles.set_special")) {
     return NextResponse.json(
-      { success: false, error: "غير مصرح: هذه الصلاحية لرئيس التحرير ومدير النظام فقط" },
+      { success: false, error: "غير مصرح: ليس لديك صلاحية تمييز المقالات كتغطية خاصة" },
       { status: 403 },
     );
   }

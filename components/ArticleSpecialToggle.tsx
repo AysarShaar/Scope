@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import { Star } from 'lucide-react';
 
 // Set by the admin area (StaffCookieSync) for signed-in staff. It only decides whether the button is
-// shown; the API checks the real session and role on every request.
+// shown; the API checks the real session and database permissions on every request.
 const STAFF_COOKIE = 'scope_staff';
-const ALLOWED_ROLES = ['admin', 'editor_in_chief'];
+const ALLOWED_VALUES = ['can_special', 'admin', 'editor_in_chief'];
 
-function readStaffRole(): string | null {
+function readStaffCookie(): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${STAFF_COOKIE}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 }
@@ -18,7 +18,7 @@ interface Props {
   initialSpecial: boolean;
 }
 
-/** The "special coverage" badge, plus a toggle button for editors-in-chief and admins. */
+/** The "special coverage" badge, plus a toggle button for editors with articles.set_special permission. */
 export function ArticleSpecialToggle({ articleId, initialSpecial }: Props) {
   const [isSpecial, setIsSpecial] = useState(initialSpecial);
   const [canToggle, setCanToggle] = useState(false);
@@ -26,8 +26,8 @@ export function ArticleSpecialToggle({ articleId, initialSpecial }: Props) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const role = readStaffRole();
-    if (!role || !ALLOWED_ROLES.includes(role)) return;
+    const val = readStaffCookie();
+    if (!val || !ALLOWED_VALUES.includes(val)) return;
     setCanToggle(true);
 
     // The page itself can come from the 2-minute cache, so ask for the live value.

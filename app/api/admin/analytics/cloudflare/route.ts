@@ -12,6 +12,8 @@ import {
   type CloudflareAnalyticsResponse,
 } from "@/lib/cloudflareAnalyticsMetrics";
 
+import { can } from "@/lib/permissions";
+
 export const runtime = "nodejs";
 
 const CF_ENDPOINT = "https://api.cloudflare.com/client/v4/graphql";
@@ -32,25 +34,7 @@ async function resolveCloudflareCredentials(env: ReturnType<typeof getCloudflare
     (env as unknown as Record<string, string>)?.CLOUDFLARE_ACCOUNT_ID
   )?.trim();
 
-  // 2. Database settings
-  if (env?.DB) {
-    try {
-      const db = getDb(env.DB);
-      const rows = await db
-        .select()
-        .from(settings)
-        .where(inArray(settings.key, ["cf_api_token", "cf_zone_id", "cf_account_id"]));
-      for (const r of rows) {
-        if (r.key === "cf_api_token" && r.value && !apiToken) apiToken = r.value.trim();
-        if (r.key === "cf_zone_id" && r.value && !zoneId) zoneId = r.value.trim();
-        if (r.key === "cf_account_id" && r.value && !accountId) accountId = r.value.trim();
-      }
-    } catch {
-      // ignore db error
-    }
-  }
-
-  // 3. Auto-discover accountId if apiToken is present but accountId is missing
+  // 2. Auto-discover accountId if apiToken is present but accountId is missing
   if (apiToken && !accountId) {
     try {
       if (zoneId) {
@@ -124,7 +108,7 @@ async function runGraphQL(
 export async function GET(request: NextRequest) {
   const env = getCloudflareEnv();
 
-  // Admin access only
+  // Check analytics.view permission
   const auth = await authenticateRequest(request, env);
   if (!auth.isValid) {
     return NextResponse.json(
@@ -132,9 +116,9 @@ export async function GET(request: NextRequest) {
       { status: 401 }
     );
   }
-  if (auth.systemRole !== "admin") {
+  if (!can(auth, "analytics.view")) {
     return NextResponse.json(
-      { success: false, error: "صلاحية مرفوضة: تحليلات Cloudflare مخصصة لمدير النظام فقط." },
+      { success: false, error: "صلاحية مرفوضة: ليس لديك صلاحية عرض تحليلات Cloudflare." },
       { status: 403 }
     );
   }
@@ -277,77 +261,4 @@ export async function GET(request: NextRequest) {
   };
 
   return NextResponse.json(body, noStore);
-}
-
-// POST: Save credentials (accountId, apiToken, zoneId)
-export async function POST(request: NextRequest) {
-  const env = getCloudflareEnv();
-  const auth = await authenticateRequest(request, env);
-  if (!auth.isValid || auth.systemRole !== "admin") {
-    return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 403 });
-  }
-
-  const body = await request.json().catch(() => null);
-  const accountId = (body?.accountId || "").trim();
-  const apiToken = (body?.apiToken || "").trim();
-  const zoneId = (body?.zoneId || "").trim();
-
-  if (!accountId && !apiToken && !zoneId) {
-    return NextResponse.json(
-      { success: false, error: "يرجى تقديم معرّف الحساب (Account ID) أو المفاتيح لتحديثها." },
-      { status: 400 }
-    );
-  }
-
-  if (env?.DB) {
-    try {
-      const db = getDb(env.DB);
-      const now = new Date().toISOString();
-
-      if (accountId) {
-        await db
-          .insert(settings)
-          .values({ key: "cf_account_id", value: accountId, updatedAt: now })
-          .onConflictDoUpdate({
-            target: settings.key,
-            set: { value: accountId, updatedAt: now },
-          });
-      }
-
-      if (apiToken) {
-        await db
-          .insert(settings)
-          .values({ key: "cf_api_token", value: apiToken, updatedAt: now })
-          .onConflictDoUpdate({
-            target: settings.key,
-            set: { value: apiToken, updatedAt: now },
-          });
-      }
-
-      if (zoneId) {
-        await db
-          .insert(settings)
-          .values({ key: "cf_zone_id", value: zoneId, updatedAt: now })
-          .onConflictDoUpdate({
-            target: settings.key,
-            set: { value: zoneId, updatedAt: now },
-          });
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "تم حفظ إعدادات Cloudflare بنجاح في قاعدة البيانات.",
-      });
-    } catch (e) {
-      return NextResponse.json(
-        { success: false, error: `فشل الحفظ: ${errorMessage(e)}` },
-        { status: 500 }
-      );
-    }
-  }
-
-  return NextResponse.json(
-    { success: false, error: "قاعدة البيانات غير متوفرة لحفظ الإعدادات." },
-    { status: 503 }
-  );
 }

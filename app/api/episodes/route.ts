@@ -7,6 +7,7 @@ import { authenticateRequest } from "../../../lib/auth";
 import { extractYouTubeId } from "../../../lib/youtube";
 import { errorMessage } from '../../../lib/errors';
 import { withEdgeCache } from '../../../lib/server/edgeCache';
+import { can } from "../../../lib/permissions";
 
 export async function GET(request: NextRequest) {
   return withEdgeCache(request, 60, () => listEpisodes(request));
@@ -94,9 +95,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+    if (!can(auth, "programs.manage")) {
       return NextResponse.json(
-        { success: false, error: "غير مصرح: إضافة الحلقات مقتصرة على رئيس التحرير والمدير" },
+        { success: false, error: "غير مصرح: ليس لديك صلاحية إضافة الحلقات" },
         { status: 403 },
       );
     }

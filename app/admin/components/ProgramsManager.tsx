@@ -20,6 +20,7 @@ import { useImageUpload } from '../hooks/useImageUpload';
 import { ProgramCard } from './ProgramCard';
 import { VideoLibrary } from './VideoLibrary';
 import { VideoPreviewModal } from './VideoPreviewModal';
+import { can } from '../../../lib/permissions';
 
 interface Props {
   programs: ScopeShow[];
@@ -27,7 +28,8 @@ interface Props {
   onAddProgram: (data: Partial<ScopeShow>) => Promise<void>;
   onUpdateProgram: (id: string, data: Partial<ScopeShow>) => Promise<void>;
   onDeleteProgram: (id: string, title: string) => Promise<void>;
-  userRole: 'admin' | 'editor_in_chief' | 'editor';
+  userRole?: 'admin' | 'editor_in_chief' | 'editor';
+  permissions?: string[];
 }
 
 const EDITORIAL_THEMES = [
@@ -46,8 +48,11 @@ export default function ProgramsManager({
   onUpdateProgram,
   onDeleteProgram,
   userRole,
+  permissions,
 }: Props) {
-  const canManage = userRole === 'admin' || userRole === 'editor_in_chief';
+  const canManage = permissions
+    ? can({ permissions }, 'programs.manage')
+    : userRole === 'admin' || userRole === 'editor_in_chief';
 
   const [activeTab, setActiveTab] = useState<'programs' | 'videos'>('programs');
 

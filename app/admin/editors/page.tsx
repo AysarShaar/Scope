@@ -5,13 +5,18 @@ import dynamic from 'next/dynamic';
 import { useAdmin } from '../components/AdminShell';
 import type { EditorItem } from '../components/EditorsList';
 import { errorMessage } from '../../../lib/errors';
+import { can } from '../../../lib/permissions';
 
 const EditorsList = dynamic(() => import('../components/EditorsList'), { ssr: false });
 
 export default function AdminEditorsPage() {
-  const { userRole, showToast, refreshProfile } = useAdmin();
+  const { userRole, userPermissions, editorId, currentUser, showToast, refreshProfile } = useAdmin();
   const [editors, setEditors] = useState<EditorItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const canManageEditors = userPermissions
+    ? can({ permissions: userPermissions }, 'editors.manage')
+    : userRole === 'admin';
 
   const loadEditors = useCallback(async () => {
     setIsLoading(true);
@@ -32,11 +37,11 @@ export default function AdminEditorsPage() {
     loadEditors();
   }, [loadEditors]);
 
-  if (userRole !== 'admin') {
+  if (!canManageEditors) {
     return (
       <div className="p-8 text-center bg-white dark:bg-[#0c101c] rounded-2xl border border-slate-200 dark:border-slate-800">
         <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">
-          هذه الصفحة مخصصة لمدير النظام فقط.
+          هذه الصفحة تتطلب صلاحية إدارة المحررين والصلاحيات.
         </p>
       </div>
     );
@@ -47,7 +52,8 @@ export default function AdminEditorsPage() {
     email?: string;
     role: string;
     avatarUrl?: string;
-    systemRole: string;
+    systemRole?: string;
+    permissions?: string[];
   }) => {
     try {
       const res = await fetch('/api/editors', {
@@ -117,6 +123,8 @@ export default function AdminEditorsPage() {
     <EditorsList
       editors={editors}
       isLoading={isLoading}
+      currentUser={{ id: editorId, email: currentUser?.email }}
+      currentUserPermissions={userPermissions}
       onAdd={handleAddEditor}
       onUpdate={handleUpdateEditor}
       onDelete={handleDeleteEditor}

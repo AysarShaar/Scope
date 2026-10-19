@@ -8,6 +8,7 @@ import { extractYouTubeId } from "../../../../lib/youtube";
 import { rowToShow } from "../../../../lib/server/programMapper";
 import { errorMessage } from '../../../../lib/errors';
 import { withEdgeCache } from "../../../../lib/server/edgeCache";
+import { can } from "../../../../lib/permissions";
 
 type IdContext = { params: Promise<{ id: string }> };
 
@@ -82,11 +83,11 @@ export async function PUT(
       );
     }
 
-    if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+    if (!can(auth, "programs.manage")) {
       return NextResponse.json(
         {
           success: false,
-          error: "غير مصرح: تعديل البرامج مقتصر على رئيس التحرير ومدير النظام",
+          error: "غير مصرح: ليس لديك صلاحية تعديل البرامج",
         },
         { status: 403 },
       );
@@ -230,11 +231,11 @@ export async function DELETE(
       );
     }
 
-    if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+    if (!can(auth, "programs.manage")) {
       return NextResponse.json(
         {
           success: false,
-          error: "غير مصرح: حذف البرامج مقتصر على رئيس التحرير ومدير النظام",
+          error: "غير مصرح: ليس لديك صلاحية حذف البرامج",
         },
         { status: 403 },
       );

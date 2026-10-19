@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../components/AdminShell';
 import { extractYouTubeId } from '../../../lib/youtube';
+import { can } from '../../../lib/permissions';
 
 export default function AdminSettingsPage() {
-  const { userRole, showToast } = useAdmin();
+  const { userRole, userPermissions, showToast } = useAdmin();
   const [liveStreamInput, setLiveStreamInput] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -62,11 +63,15 @@ export default function AdminSettingsPage() {
     }
   };
 
-  if (userRole !== 'admin') {
+  const canLiveStream = userPermissions
+    ? can({ permissions: userPermissions }, 'settings.live_stream')
+    : userRole === 'admin';
+
+  if (!canLiveStream) {
     return (
       <div className="p-8 text-center bg-white dark:bg-[#0c101c] rounded-2xl border border-slate-200 dark:border-slate-800">
         <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">
-          هذه الصفحة مخصصة لمدير النظام فقط.
+          هذه الصفحة تتطلب صلاحية تعديل البث المباشر.
         </p>
       </div>
     );

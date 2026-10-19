@@ -17,6 +17,8 @@ import {
   type Sections,
 } from "@/lib/analyticsMetrics";
 
+import { can } from "@/lib/permissions";
+
 export const runtime = "nodejs";
 
 // Metric definitions, filters and unverified assumptions: see ./METRICS.md
@@ -24,40 +26,17 @@ export const runtime = "nodejs";
 const CF_ENDPOINT = "https://api.cloudflare.com/client/v4/graphql";
 const CF_TIMEOUT_MS = 15_000;
 
-async function resolveCredentials(env: ReturnType<typeof getCloudflareEnv>) {
+function resolveCredentials(env: ReturnType<typeof getCloudflareEnv>) {
   // 1. Check environment variables
-  let apiToken = (
+  const apiToken = (
     process.env.CLOUDFLARE_API_TOKEN ||
     (env as unknown as Record<string, string>)?.CLOUDFLARE_API_TOKEN
   )?.trim();
-  let zoneId = (
+  const zoneId = (
     process.env.CLOUDFLARE_ZONE_ID ||
     (env as unknown as Record<string, string>)?.CLOUDFLARE_ZONE_ID
   )?.trim();
-  let tokenSource: "environment" | "database" | "none" = apiToken ? "environment" : "none";
-
-  // 2. If not in environment, check DB settings table
-  if ((!apiToken || !zoneId) && env?.DB) {
-    try {
-      const db = getDb(env.DB);
-      const rows = await db
-        .select()
-        .from(settings)
-        .where(inArray(settings.key, ["cf_api_token", "cf_zone_id"]));
-
-      for (const r of rows) {
-        if (r.key === "cf_api_token" && r.value) {
-          apiToken = r.value.trim();
-          tokenSource = "database";
-        }
-        if (r.key === "cf_zone_id" && r.value) {
-          zoneId = r.value.trim();
-        }
-      }
-    } catch {
-      // ignore db error
-    }
-  }
+  const tokenSource: "environment" | "none" = apiToken ? "environment" : "none";
 
   return { apiToken, zoneId, tokenSource };
 }
@@ -145,7 +124,7 @@ async function attachArticleMeta(
 export async function GET(request: NextRequest) {
   const env = getCloudflareEnv();
 
-  // Admin only
+  // Check analytics.view permission
   const auth = await authenticateRequest(request, env);
   if (!auth.isValid) {
     return NextResponse.json(
@@ -153,16 +132,16 @@ export async function GET(request: NextRequest) {
       { status: 401 }
     );
   }
-  if (auth.systemRole !== "admin") {
+  if (!can(auth, "analytics.view")) {
     return NextResponse.json(
-      { success: false, error: "صلاحية مرفوضة: لوحة المؤشرات والتحليلات مخصصة لمدير النظام (Admin) فقط." },
+      { success: false, error: "صلاحية مرفوضة: ليس لديك صلاحية عرض لوحة المؤشرات والتحليلات." },
       { status: 403 }
     );
   }
 
   const { searchParams, host } = new URL(request.url);
   const win = computeWindow(searchParams.get("timeRange") || "today");
-  const { apiToken, zoneId, tokenSource } = await resolveCredentials(env);
+  const { apiToken, zoneId, tokenSource } = resolveCredentials(env);
   const noStore = { headers: { "Cache-Control": "no-store" } };
 
   const diagnostics = { hasToken: Boolean(apiToken), hasZoneId: Boolean(zoneId), tokenSource };
@@ -170,7 +149,7 @@ export async function GET(request: NextRequest) {
   // No credentials: say so. No demo numbers.
   if (!apiToken || !zoneId) {
     const reason =
-      "Cloudflare credentials are not configured (CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID, or POST them to this endpoint).";
+      "Cloudflare credentials are not configured in environment (CLOUDFLARE_API_TOKEN / CLOUDFLARE_ZONE_ID).";
     const raw = Object.fromEntries(QUERY_NAMES.map((n) => [n, unavailable(reason)])) as RawZones;
     const built = buildSections(raw);
     const body: AnalyticsResponse = {
@@ -201,62 +180,4 @@ export async function GET(request: NextRequest) {
     sections: { ...built, articles: await attachArticleMeta(env, built.articles) },
   };
   return NextResponse.json(body, noStore);
-}
-
-// POST: Save credentials directly into DB settings table and test connection
-export async function POST(request: NextRequest) {
-  const env = getCloudflareEnv();
-  const auth = await authenticateRequest(request, env);
-  if (!auth.isValid || auth.systemRole !== "admin") {
-    return NextResponse.json({ success: false, error: "غير مصرح" }, { status: 403 });
-  }
-
-  const body = await request.json().catch(() => null);
-  const token = (body?.apiToken || "").trim();
-  const zone = (body?.zoneId || "").trim();
-
-  if (!token || !zone) {
-    return NextResponse.json(
-      { success: false, error: "يرجى تقديم كل من API Token و Zone ID معاً." },
-      { status: 400 }
-    );
-  }
-
-  if (env?.DB) {
-    try {
-      const db = getDb(env.DB);
-      const now = new Date().toISOString();
-
-      await db
-        .insert(settings)
-        .values({ key: "cf_api_token", value: token, updatedAt: now })
-        .onConflictDoUpdate({
-          target: settings.key,
-          set: { value: token, updatedAt: now },
-        });
-
-      await db
-        .insert(settings)
-        .values({ key: "cf_zone_id", value: zone, updatedAt: now })
-        .onConflictDoUpdate({
-          target: settings.key,
-          set: { value: zone, updatedAt: now },
-        });
-
-      return NextResponse.json({
-        success: true,
-        message: "تم حفظ مفاتيح Cloudflare بنجاح في قاعدة البيانات.",
-      });
-    } catch (e) {
-      return NextResponse.json(
-        { success: false, error: `فشل الحفظ في قاعدة البيانات: ${errorMessage(e)}` },
-        { status: 500 }
-      );
-    }
-  }
-
-  return NextResponse.json(
-    { success: false, error: "قاعدة البيانات غير متوفرة لحفظ المفاتيح." },
-    { status: 503 }
-  );
 }

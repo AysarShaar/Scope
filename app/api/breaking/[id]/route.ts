@@ -5,6 +5,7 @@ import { breaking } from "../../../../db/schema";
 import { eq } from "drizzle-orm";
 import { authenticateRequest } from "../../../../lib/auth";
 import { errorMessage } from '../../../../lib/errors';
+import { can } from "../../../../lib/permissions";
 
 export async function DELETE(
   request: NextRequest,
@@ -18,11 +19,11 @@ export async function DELETE(
       { status: 401 },
     );
   }
-  if (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief") {
+  if (!can(auth, "breaking.manage")) {
     return NextResponse.json(
       {
         success: false,
-        error: "غير مصرح: يجب أن تكون مديراً أو رئيس تحرير للمتابعة",
+        error: "غير مصرح: ليس لديك صلاحية إدارة الأخبار العاجلة",
       },
       { status: 403 },
     );

@@ -97,7 +97,9 @@ export function createLocalD1Adapter(customDb?: SqliteDatabaseLike): LocalD1Data
           const rows = (boundValues.length > 0
             ? prepared.all(...boundValues)
             : prepared.all()) as T[];
-          return { results: rows, success: true, meta: {} };
+          const changesRow = sqliteDb.prepare("SELECT changes() AS c").get() as { c?: number } | undefined;
+          const changes = changesRow?.c ?? 0;
+          return { results: rows, success: true, meta: { changes } };
         } catch (err) {
           console.error("[localD1Adapter] .all() error:", err, "\nSQL:", sql);
           throw err;

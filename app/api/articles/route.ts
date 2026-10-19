@@ -12,6 +12,7 @@ import { errorMessage } from '../../../lib/errors';
 import { buildMatchQuery } from "../../../lib/search";
 import { withEdgeCache } from "../../../lib/server/edgeCache";
 import { generateSemanticId } from "../../../lib/semanticId";
+import { can } from "../../../lib/permissions";
 
 
 // Public listings are cached briefly at the edge (see lib/server/edgeCache.ts); the admin view (includePending) never is.
@@ -196,8 +197,8 @@ export async function POST(request: NextRequest) {
         { status: 401 },
       );
     }
-    const canPublishDirectly =
-      auth.systemRole === "admin" || auth.systemRole === "editor_in_chief";
+    const canPublishDirectly = can(auth, "articles.publish_direct");
+    const canSetSpecial = can(auth, "articles.set_special");
     const editorId = auth.editorId || null;
 
     const body: Partial<ScopeArticle> & { status?: string } =
@@ -308,7 +309,7 @@ export async function POST(request: NextRequest) {
       editorId: finalEditorId,
       content: contentCheck.value ? JSON.stringify(contentCheck.value) : null,
       status: canPublishDirectly ? body.status || "published" : "pending",
-      isSpecial: canPublishDirectly ? Boolean(body.isSpecial) : false,
+      isSpecial: canSetSpecial ? Boolean(body.isSpecial) : false,
       createdAt: now,
       updatedAt: now,
     };

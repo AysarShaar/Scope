@@ -6,6 +6,7 @@ import { eq, desc } from "drizzle-orm";
 import { authenticateRequest } from "../../../../lib/auth";
 import { extractYouTubeId } from "../../../../lib/youtube";
 import { errorMessage } from '../../../../lib/errors';
+import { can } from "../../../../lib/permissions";
 
 export async function GET(
   _request: NextRequest,
@@ -53,7 +54,14 @@ export async function PUT(
     const env = getCloudflareEnv();
     const auth = await authenticateRequest(request, env);
 
-    if (!auth.isValid || (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief")) {
+    if (!auth.isValid) {
+      return NextResponse.json(
+        { success: false, error: "غير مصرح: يرجى تسجيل الدخول للمتابعة" },
+        { status: 401 },
+      );
+    }
+
+    if (!can(auth, "programs.manage")) {
       return NextResponse.json(
         { success: false, error: "غير مصرح لتعديل الحلقة" },
         { status: 403 },
@@ -128,7 +136,14 @@ export async function DELETE(
     const env = getCloudflareEnv();
     const auth = await authenticateRequest(request, env);
 
-    if (!auth.isValid || (auth.systemRole !== "admin" && auth.systemRole !== "editor_in_chief")) {
+    if (!auth.isValid) {
+      return NextResponse.json(
+        { success: false, error: "غير مصرح: يرجى تسجيل الدخول للمتابعة" },
+        { status: 401 },
+      );
+    }
+
+    if (!can(auth, "programs.manage")) {
       return NextResponse.json(
         { success: false, error: "غير مصرح بحذف الحلقة" },
         { status: 403 },

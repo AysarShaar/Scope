@@ -9,7 +9,7 @@ const ArticlesList = dynamic(() => import('../components/ArticlesList'), { ssr: 
 const ArticleEditor = dynamic(() => import('../components/ArticleEditor'), { ssr: false });
 
 export default function AdminArticlesPage() {
-  const { userRole, editorId, editors, showToast } = useAdmin();
+  const { userRole, userPermissions, editorId, editors, showToast } = useAdmin();
   const [editingArticle, setEditingArticle] = useState<ScopeArticle | null | undefined>(undefined);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -115,6 +115,7 @@ export default function AdminArticlesPage() {
         onDelete={handleDeleteArticle}
         onApprove={handleApproveArticle}
         userRole={userRole}
+        permissions={userPermissions}
       />
 
       {editingArticle !== undefined && (
@@ -125,6 +126,7 @@ export default function AdminArticlesPage() {
           onClose={() => setEditingArticle(undefined)}
           isLoading={isActionLoading}
           userRole={userRole}
+          permissions={userPermissions}
           currentEditorId={editorId}
         />
       )}

@@ -30,6 +30,8 @@ const EDITORIAL_THEMES = [
   { id: 'colosseum_history', label: 'ثقافة وتراث إنساني' },
 ];
 
+import { can } from '../../../lib/permissions';
+
 interface Props {
   article: ScopeArticle | null;
   editors?: EditorItem[];
@@ -37,6 +39,7 @@ interface Props {
   onClose: () => void;
   isLoading: boolean;
   userRole: 'admin' | 'editor_in_chief' | 'editor';
+  permissions?: string[];
   currentEditorId: string | null;
 }
 
@@ -50,6 +53,7 @@ export default function ArticleEditor({
   onClose,
   isLoading,
   userRole,
+  permissions,
   currentEditorId,
 }: Props) {
   const { theme, toggleTheme } = useTheme();
@@ -110,7 +114,15 @@ export default function ArticleEditor({
     },
   );
 
-  const canPublishDirectly = userRole === 'admin' || userRole === 'editor_in_chief';
+  const canPublishDirectly =
+    permissions !== undefined
+      ? can({ permissions }, 'articles.publish_direct')
+      : userRole === 'admin' || userRole === 'editor_in_chief';
+
+  const canSetSpecial =
+    permissions !== undefined
+      ? can({ permissions }, 'articles.set_special')
+      : canPublishDirectly;
 
   const handleEditorSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;

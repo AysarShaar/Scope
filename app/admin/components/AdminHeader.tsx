@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { AdminSection } from './AdminSidebar';
+import { can } from '../../../lib/permissions';
 
 export interface AdminUser {
   name: string;
@@ -18,6 +19,7 @@ export interface AdminUser {
   role: 'admin' | 'editor_in_chief' | 'editor';
   roleLabel: string;
   email?: string | null;
+  permissions?: string[];
 }
 
 interface AdminHeaderProps {
@@ -247,29 +249,29 @@ export default function AdminHeader({
               </div>
 
               <div className="px-2 pt-2 pb-1 space-y-0.5 text-xs select-none">
-                {onNavigate && user.role === 'admin' && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onNavigate('dashboard');
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer text-right font-medium"
-                    >
-                      <span>لوحة المؤشرات والتحليلات</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onNavigate('settings');
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer text-right"
-                    >
-                      <span>إعدادات المنصة</span>
-                    </button>
-                  </>
+                {onNavigate && can(user, 'analytics.view') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigate('dashboard');
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer text-right font-medium"
+                  >
+                    <span>لوحة المؤشرات والتحليلات</span>
+                  </button>
+                )}
+                {onNavigate && can(user, 'settings.live_stream') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigate('settings');
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors cursor-pointer text-right"
+                  >
+                    <span>إعدادات المنصة</span>
+                  </button>
                 )}
 
                 <Link

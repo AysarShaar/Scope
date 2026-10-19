@@ -10,6 +10,7 @@ declare module 'next-auth' {
       role?: SystemRole;
       editorId?: string;
       editorName?: string;
+      permissions?: string[];
     };
   }
 }
@@ -19,5 +20,6 @@ declare module 'next-auth/jwt' {
     role?: SystemRole;
     editorId?: string;
     editorName?: string;
+    permissions?: string[];
   }
 }
