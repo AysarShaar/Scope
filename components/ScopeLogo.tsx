@@ -213,9 +213,11 @@ export const ScopeLogo: React.FC<ScopeLogoProps> = ({
         u_of: (it: (typeof items)[0]) => number,
         ss: number,
         oScale: number,
-        oRot: number
+        oRot: number,
+        pVal: number
       ) => {
-        O.style.transform = `rotate(${oRot}deg) scale(${oScale})`;
+        const shiftPercent = ease(clamp(pVal / 0.85)) * 22;
+        O.style.transform = `translateY(${shiftPercent}%) rotate(${oRot}deg) scale(${oScale})`;
         for (const it of items) {
           const u = u_of(it);
           const m = 1 - u;
@@ -238,7 +240,8 @@ export const ScopeLogo: React.FC<ScopeLogoProps> = ({
           },
           s,
           scaleAt(p),
-          360 * ease(p)
+          360 * ease(p),
+          p
         );
       };
 
@@ -283,7 +286,7 @@ export const ScopeLogo: React.FC<ScopeLogoProps> = ({
 
   return (
     <svg
-      viewBox="160 220 2110 820"
+      viewBox="160 160 2110 920"
       preserveAspectRatio="xMidYMid meet"
       className={`select-none shrink-0 overflow-visible transition-colors duration-200 ${className}`}
       role="img"

@@ -115,7 +115,7 @@ export default async function ArticlePage({ params }: PageProps) {
   const fallbackRelated = (allArticles || []).filter(
     (a) => !excludedIds.has(a.id) && !directRelated.some((r) => r.id === a.id)
   );
-  const relatedArticles = [...directRelated, ...fallbackRelated].slice(0, 3);
+  const relatedArticles = [...directRelated, ...fallbackRelated].slice(0, 5);
   const siteUrl = getSiteUrl();
   const articleUrl = `${siteUrl}/news/${article.id}`;
 
@@ -235,108 +235,126 @@ export default async function ArticlePage({ params }: PageProps) {
       </nav>
 
       <main className="flex-1 w-full">
-        <div className="max-w-[920px] mx-auto w-full px-4 sm:px-6 pt-6 sm:pt-10 pb-2">
-          <article className="w-full space-y-6 font-article">
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800/80 text-xs">
-              <div className="flex items-center gap-2.5">
-                <Link
-                  href={`/category/${article.categorySlug}`}
-                  prefetch={false}
-                  className="text-xs sm:text-[13px] font-bold text-[#A42424] dark:text-[#E05252] hover:opacity-80 transition-opacity"
-                >
-                  {article.category}
-                </Link>
-              </div>
+        <div className="max-w-[1480px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-10">
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-10 xl:gap-14 relative">
+            {/* Sidebar: Related Articles (مقالات ذات صلة) */}
+            {/* On mobile: order-2 (placed below article) */}
+            {/* On desktop: order-1 (placed at reading start: right in AR, left in EN) */}
+            {relatedArticles.length > 0 && (
+              <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 order-2 lg:order-1 pt-8 lg:pt-0 border-t lg:border-t-0 border-slate-200 dark:border-slate-800 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto no-scrollbar z-10">
+                <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800 mb-5">
+                  <span className="w-1.5 h-5 bg-[#A42424] rounded-full inline-block" />
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                    تقارير ذات صلة
+                  </h2>
+                </div>
 
-              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-sans text-[13px]">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>{article.date}</span>
-              </div>
-            </div>
+                <div className="space-y-5">
+                  {relatedArticles.map((rel) => (
+                    <Link
+                      key={rel.id}
+                      href={`/news/${rel.id}`}
+                      prefetch={false}
+                      className="group block cursor-pointer border-b border-slate-200/80 dark:border-slate-800/80 pb-5 last:border-none last:pb-0"
+                    >
+                      {/* Image on top (Golden Ratio) */}
+                      <div className="relative aspect-[1.618/1] overflow-hidden rounded-[10px] bg-[#0d1624] mb-2.5">
+                        <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
+                          <ScopeVisual
+                            imageUrl={rel.imageUrl}
+                            type={rel.imageType}
+                            category={rel.categorySlug}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
 
-            <h1 data-speakable="headline" className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-black text-slate-900 dark:text-white leading-[1.3] rtl:text-right ltr:text-left tracking-tight">
-              {article.title}
-            </h1>
+                      {/* Category */}
+                      <span className="text-[11px] sm:text-xs font-extrabold text-[#A42424] dark:text-[#F27676] block mb-1">
+                        {rel.category}
+                      </span>
 
-            {article.subtitle && (
-              <p data-speakable="summary" className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium rtl:text-right ltr:text-left">
-                {article.subtitle}
-              </p>
+                      {/* Title */}
+                      <h3 className="text-sm sm:text-[15px] font-black leading-[1.4] text-slate-900 dark:text-white transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2">
+                        {rel.title}
+                      </h3>
+
+                      {/* Subtitle */}
+                      {rel.subtitle && (
+                        <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2">
+                          {rel.subtitle}
+                        </p>
+                      )}
+
+                      {/* Date */}
+                      <div className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-400 font-sans">
+                        <Clock className="w-3.5 h-3.5 opacity-70" />
+                        <span>{rel.date}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </aside>
             )}
 
-            <div className="space-y-2">
-              <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden shadow-xs bg-slate-950 border border-slate-200/60 dark:border-slate-800">
-                <ScopeVisual imageUrl={article.imageUrl} type={article.imageType} className="w-full h-full object-cover" priority />
+            {/* Main Article (المقال والصورة) */}
+            {/* On mobile: order-1 (placed first) */}
+            {/* On desktop: order-2 (placed at reading end: left in AR, right in EN) */}
+            <article className="flex-1 min-w-0 max-w-[880px] xl:max-w-[920px] w-full space-y-6 font-article order-1 lg:order-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800/80 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <Link
+                    href={`/category/${article.categorySlug}`}
+                    prefetch={false}
+                    className="text-xs sm:text-[13px] font-bold text-[#A42424] dark:text-[#E05252] hover:opacity-80 transition-opacity"
+                  >
+                    {article.category}
+                  </Link>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-sans text-[13px]">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{article.date}</span>
+                </div>
               </div>
-              {article.caption && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-sans pt-1">
-                  {article.caption}
+
+              <h1 data-speakable="headline" className="text-2xl sm:text-3xl md:text-4xl lg:text-[40px] xl:text-[42px] font-black text-slate-900 dark:text-white leading-[1.3] rtl:text-right ltr:text-left tracking-tight">
+                {article.title}
+              </h1>
+
+              {article.subtitle && (
+                <p data-speakable="summary" className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium rtl:text-right ltr:text-left">
+                  {article.subtitle}
                 </p>
               )}
-            </div>
 
-            <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 rtl:text-right ltr:text-left [word-spacing:-0.03em]">
-              {article.content && article.content.length > 0 ? (
-                <ArticleBody content={article.content} title={article.title} />
-              ) : (
-                <p>
-                  تغطية استقصائية شاملة ومستمرة من غرفة أخبار SCOPE MEDIA لكافة المستجدات والتطورات المتعلقة بهذا الملف، مع متابعة دقيقة لمواقف الأطراف الفاعلة وانعكاساتها المباشرة على المشهد العام.
-                </p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden shadow-xs bg-slate-950 border border-slate-200/60 dark:border-slate-800">
+                  <ScopeVisual imageUrl={article.imageUrl} type={article.imageType} className="w-full h-full object-cover" priority />
+                </div>
+                {article.caption && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-sans pt-1">
+                    {article.caption}
+                  </p>
+                )}
+              </div>
 
-            <ArticleInteractiveBar articleId={article.id} title={article.title} />
-          </article>
+              <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 rtl:text-right ltr:text-left [word-spacing:-0.03em]">
+                {article.content && article.content.length > 0 ? (
+                  <ArticleBody content={article.content} title={article.title} />
+                ) : (
+                  <p>
+                    تغطية استقصائية شاملة ومستمرة من غرفة أخبار SCOPE MEDIA لكافة المستجدات والتطورات المتعلقة بهذا الملف، مع متابعة دقيقة لمواقف الأطراف الفاعلة وانعكاساتها المباشرة على المشهد العام.
+                  </p>
+                )}
+              </div>
+
+              <ArticleInteractiveBar articleId={article.id} title={article.title} />
+            </article>
+          </div>
         </div>
 
         <ArticleNavigation currentArticleId={article.id} navArticles={navArticles} />
-
-        {relatedArticles.length > 0 && (
-          <section aria-labelledby="relTitle" className="max-w-[1320px] mx-auto w-full px-4 sm:px-6 lg:px-10 pt-7 sm:pt-8 pb-2">
-            <h2
-              id="relTitle"
-              className="mb-7 text-2xl sm:text-3xl lg:text-[2.2rem] font-black leading-snug text-[#101722] dark:text-[#f0f3f8]"
-            >
-              تقارير ذات صلة
-            </h2>
-
-            <div className="grid">
-              {relatedArticles.map((rel) => (
-                <Link
-                  key={rel.id}
-                  href={`/news/${rel.id}`}
-                  prefetch={false}
-                  className="group grid grid-cols-1 md:grid-cols-[5fr_7fr] items-center gap-4 md:gap-10 py-7 border-t border-[#d9e0e8] dark:border-[#212c3c] last:border-b"
-                >
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-[10px] bg-[#0d1624]">
-                    <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
-                      <ScopeVisual
-                        imageUrl={rel.imageUrl}
-                        type={rel.imageType}
-                        category={rel.categorySlug}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[13px] font-extrabold text-[#A42424] dark:text-[#F27676]">{rel.category}</span>
-                    <h3 className="mt-1.5 text-xl sm:text-2xl lg:text-[1.9rem] font-black leading-[1.45] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676]">
-                      {rel.title}
-                    </h3>
-                    {rel.subtitle && (
-                      <p className="mt-2.5 max-w-[56ch] text-base leading-[1.85] text-[#566274] dark:text-[#98a5b7] line-clamp-2">
-                        {rel.subtitle}
-                      </p>
-                    )}
-                    <div className="mt-3 flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-[#566274] dark:text-[#98a5b7]">
-                      <span>{rel.date}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <ScopeFooter />

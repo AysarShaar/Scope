@@ -292,7 +292,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
           </div>
 
           {/* Desktop Navigation Bar: Exact Centered Logo & Nav flanked around it */}
-          <div className="hidden md:flex items-center justify-between h-16 lg:h-20 relative">
+          <div className="hidden md:flex items-center justify-between h-20 lg:h-24 relative">
             {/* Far Start Side: Search & Language Switcher */}
             <div className="flex items-center gap-2.5 lg:gap-3 shrink-0 z-10">
               {/* Search Toggle */}
@@ -343,7 +343,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
               </nav>
 
               {/* Centered SCOPE MEDIA Logo */}
-              <div className="shrink-0 px-3 lg:px-5 xl:px-6">
+              <div className="shrink-0 px-3 lg:px-5 xl:px-6 translate-y-1.5 lg:translate-y-2">
                 <Link
                   href="/"
                   onClick={() => onSelectTab && onSelectTab('home')}

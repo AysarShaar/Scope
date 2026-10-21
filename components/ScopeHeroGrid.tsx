@@ -126,6 +126,17 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
 }) => {
   const { dir, lang } = useLanguage();
   const [carouselIndex, setCarouselIndex] = useState<number>(0);
+  const [isTablet, setIsTablet] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth;
+      setIsTablet(w >= 768 && w < 1024);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Lead breaking article: prioritize special / specialArticles[0] or latest article
   const leadArticle = useMemo(() => {
@@ -583,6 +594,49 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
     return result.slice(0, 24);
   }, [articles, heroArticleIds, fallbackNews24]);
 
+  // Group news articles into responsive rows for tablet / desktop:
+  // Desktop (4 cols): 2 rows of 4 standard, then 1 row of 2 featured (مختارات style), repeat.
+  // Tablet (3 cols): 2 rows of 3 standard, then 1 row of 2 featured (مختارات style), repeat.
+  const newsRows = useMemo(() => {
+    const rowsList: Array<{ type: 'standard' | 'featured'; items: ScopeArticle[] }> = [];
+    let idx = 0;
+    const total = latestNewsList.length;
+
+    if (isTablet) {
+      while (idx < total) {
+        if (idx < total) {
+          rowsList.push({ type: 'standard', items: latestNewsList.slice(idx, idx + 3) as ScopeArticle[] });
+          idx += 3;
+        }
+        if (idx < total) {
+          rowsList.push({ type: 'standard', items: latestNewsList.slice(idx, idx + 3) as ScopeArticle[] });
+          idx += 3;
+        }
+        if (idx < total) {
+          rowsList.push({ type: 'featured', items: latestNewsList.slice(idx, idx + 2) as ScopeArticle[] });
+          idx += 2;
+        }
+      }
+    } else {
+      while (idx < total) {
+        if (idx < total) {
+          rowsList.push({ type: 'standard', items: latestNewsList.slice(idx, idx + 4) as ScopeArticle[] });
+          idx += 4;
+        }
+        if (idx < total) {
+          rowsList.push({ type: 'standard', items: latestNewsList.slice(idx, idx + 4) as ScopeArticle[] });
+          idx += 4;
+        }
+        if (idx < total) {
+          rowsList.push({ type: 'featured', items: latestNewsList.slice(idx, idx + 2) as ScopeArticle[] });
+          idx += 2;
+        }
+      }
+    }
+
+    return rowsList;
+  }, [latestNewsList, isTablet]);
+
   // Auto rotate carousel indicators
   useEffect(() => {
     const timer = setInterval(() => {
@@ -624,13 +678,13 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
             alt="Hero Background"
             className="w-full h-full object-cover object-center brightness-75 scale-100 transition-transform duration-1000 ease-out"
           />
-          {/* Deep cinematic overlays for header readability at top & contrast at bottom */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/35 to-[#0b1c2b]/95 pointer-events-none" />
-          <div className="absolute inset-0 bg-radial from-transparent via-black/20 to-black/60 pointer-events-none" />
+          {/* Deep cinematic overlays for header readability at top & clean transparency at bottom */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/25 to-black/35 pointer-events-none" />
+          <div className="absolute inset-0 bg-radial from-transparent via-transparent to-black/30 pointer-events-none" />
         </div>
 
         {/* Hero Content Container (Padded at top to sit below transparent overlay header) */}
-        <div className="relative z-10 w-full max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-30 md:pt-32 pb-6 sm:pb-8 flex-1 flex flex-col justify-between">
+        <div className="relative z-10 w-full max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 pt-30 sm:pt-32 md:pt-36 lg:pt-40 pb-6 sm:pb-8 flex-1 flex flex-col justify-between">
           {/* Top/Main Lead News Content (Desktop.jpg left side) */}
           <div className="max-w-xl lg:max-w-2xl space-y-3 sm:space-y-4 pt-4 md:pt-8">
             {/* Category / Slug in Red instead of Breaking News */}
@@ -670,9 +724,9 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
         {/* ============================================================ */}
         {/* Desktop View: 3 Static cards, blue card reaches exactly 50% midpoint of photos */}
         <div className="hidden md:block absolute bottom-0 end-0 z-20">
-          <div className="relative max-w-[560px] lg:max-w-[640px] px-6 lg:px-8 pb-6 lg:pb-8 pe-7 lg:pe-10">
+          <div className="relative max-w-[560px] lg:max-w-[640px] px-6 lg:px-8 pb-7 lg:pb-9 pe-8 lg:pe-12">
             {/* The Blue Box background: top edge positioned at the vertical midpoint of the image */}
-            <div className="absolute inset-x-0 bottom-0 top-[50px] lg:top-[56px] bg-[#163750] rounded-none shadow-2xl -z-10" />
+            <div className="absolute inset-x-0 bottom-0 top-[50px] lg:top-[56px] bg-[#09263E]/70 rounded-none shadow-2xl -z-10" />
 
             {/* 3 Static Cards */}
             <div className="grid grid-cols-3 gap-4 lg:gap-5 relative z-10">
@@ -684,7 +738,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
                   className="group block cursor-pointer"
                 >
                   {/* Golden Ratio Thumbnail 1.6:1 (Top half overlaps hero background, bottom half sits on blue box) */}
-                  <div className="relative aspect-[1.618/1] w-full rounded-none overflow-hidden bg-slate-900 shadow-md mb-2.5">
+                  <div className="relative aspect-[1.618/1] w-full rounded-none overflow-hidden bg-slate-900 shadow-md mb-3.5">
                     <ScopeVisual
                       imageUrl={card.imageUrl}
                       type={card.imageType}
@@ -694,7 +748,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
                   </div>
 
                   {/* White Category Tag Badge */}
-                  <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold bg-white text-[#163750] rounded-none shadow-xs mb-1.5">
+                  <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold bg-white text-[#09263E] rounded-none shadow-xs mb-2">
                     {card.category}
                   </span>
 
@@ -704,7 +758,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
                   </h4>
 
                   {/* Date */}
-                  <p className="text-[9px] lg:text-[10px] text-slate-300 font-sans mt-1">
+                  <p className="text-[9px] lg:text-[10px] text-slate-300 font-sans mt-1.5">
                     {card.date}
                   </p>
                 </Link>
@@ -715,9 +769,9 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
 
         {/* Mobile View: 3 Rotating cards with carousel navigation, fixed size blue box accommodating 3 lines of title */}
         <div className="md:hidden absolute bottom-0 end-0 z-20">
-          <div className="relative w-[215px] px-3.5 pb-3.5 pe-4">
+          <div className="relative w-[215px] px-3.5 pb-4 pe-5">
             {/* The Blue Box background: top edge reaches vertical midpoint of photo (fixed size) */}
-            <div className="absolute inset-x-0 bottom-0 top-[57px] bg-[#163750] rounded-none shadow-2xl -z-10" />
+            <div className="absolute inset-x-0 bottom-0 top-[57px] bg-[#09263E]/70 rounded-none shadow-2xl -z-10" />
 
             <div className="relative z-10 flex flex-col justify-between h-[230px]">
               {(() => {
@@ -728,7 +782,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
                     prefetch={false}
                     className="block group"
                   >
-                    <div className="relative aspect-[1.618/1] w-full rounded-none overflow-hidden bg-slate-900 shadow-md mb-2">
+                    <div className="relative aspect-[1.618/1] w-full rounded-none overflow-hidden bg-slate-900 shadow-md mb-3">
                       <ScopeVisual
                         imageUrl={mobileCard.imageUrl}
                         type={mobileCard.imageType}
@@ -737,7 +791,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
                       />
                     </div>
 
-                    <span className="inline-block px-1.5 py-0.5 text-[8px] font-bold bg-white text-[#163750] rounded-none shadow-xs mb-1.5">
+                    <span className="inline-block px-1.5 py-0.5 text-[8px] font-bold bg-white text-[#09263E] rounded-none shadow-xs mb-2">
                       {mobileCard.category}
                     </span>
 
@@ -796,53 +850,158 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
             </button>
           </div>
 
-          {/* Grid of News Items: Same vertical card design as mobile, with multiple articles per line on desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-7">
+          {/* Mobile View: Vertical list where images span full screen width */}
+          <div className="md:hidden space-y-7">
             {latestNewsList.map((item) => (
               <Link
                 key={item.id}
                 href={`/news/${item.id}`}
                 prefetch={false}
-                className="group flex flex-col justify-between cursor-pointer border-b border-[#e5e9ef] dark:border-[#1e293b] pb-6 sm:border-none sm:pb-0"
+                className="group block cursor-pointer border-b border-[#e5e9ef] dark:border-[#1e293b] pb-6 last:border-none"
               >
-                <div>
-                  {/* Image on top */}
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-[10px] bg-[#0d1624] mb-3">
-                    <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
-                      <ScopeVisual
-                        imageUrl={item.imageUrl}
-                        type={(item as ScopeArticle).imageType}
-                        category={(item as ScopeArticle).categorySlug}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                {/* Full-width image across the entire mobile screen */}
+                <div className="relative aspect-[1.618/1] -mx-4 overflow-hidden rounded-none bg-[#0d1624] mb-3.5">
+                  <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]">
+                    <ScopeVisual
+                      imageUrl={item.imageUrl}
+                      type={(item as ScopeArticle).imageType}
+                      category={(item as ScopeArticle).categorySlug}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-
-                  {/* Category in Red */}
-                  <span className="text-[12px] sm:text-[13px] font-extrabold text-[#A42424] dark:text-[#F27676] block">
-                    {item.category}
-                  </span>
-
-                  {/* Title */}
-                  <h3 className="mt-1.5 text-base sm:text-lg font-black leading-[1.4] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2">
-                    {item.title}
-                  </h3>
-
-                  {/* Subtitle */}
-                  {(item as ScopeArticle).subtitle && (
-                    <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#566274] dark:text-[#98a5b7] line-clamp-2">
-                      {(item as ScopeArticle).subtitle}
-                    </p>
-                  )}
                 </div>
 
-                {/* Date at the bottom */}
+                {/* Content with natural page padding */}
+                <span className="text-[12px] font-extrabold text-[#A42424] dark:text-[#F27676] block">
+                  {item.category}
+                </span>
+
+                <h3 className="mt-1.5 text-base font-black leading-[1.4] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2">
+                  {item.title}
+                </h3>
+
+                {(item as ScopeArticle).subtitle && (
+                  <p className="mt-2 text-xs leading-relaxed text-[#566274] dark:text-[#98a5b7] line-clamp-2">
+                    {(item as ScopeArticle).subtitle}
+                  </p>
+                )}
+
                 <div className="mt-3 flex items-center gap-1.5 text-xs text-[#566274] dark:text-[#98a5b7]">
                   <Clock className="w-3.5 h-3.5 opacity-70" />
                   <span>{item.date}</span>
                 </div>
               </Link>
             ))}
+          </div>
+
+          {/* Tablet & Desktop View: Organized in structured rows with alternating featured "مختارات" rows */}
+          <div className="hidden md:flex flex-col space-y-6 lg:space-y-7">
+            {newsRows.map((row, rIdx) => {
+              if (row.type === 'featured') {
+                return (
+                  <div
+                    key={`row-featured-${rIdx}`}
+                    className="grid grid-cols-2 gap-6 lg:gap-7"
+                  >
+                    {row.items.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/news/${item.id}`}
+                        prefetch={false}
+                        className="group relative block overflow-hidden rounded-xl bg-[#0d1624] text-white isolate shadow-sm hover:shadow-xl transition-all aspect-[1.618/1] cursor-pointer"
+                      >
+                        {/* Golden ratio full-bleed background image */}
+                        <div className="absolute inset-0 -z-20 transition-transform duration-700 ease-out group-hover:scale-105">
+                          <ScopeVisual
+                            imageUrl={item.imageUrl}
+                            type={item.imageType}
+                            category={item.categorySlug}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Cinematic gradient overlay matching Article Navigation */}
+                        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[rgba(5,9,16,.96)] via-[rgba(5,9,16,.65)] via-50% to-[rgba(5,9,16,.08)] pointer-events-none" />
+
+                        {/* Bottom-aligned content overlay */}
+                        <div className="absolute inset-x-0 bottom-0 p-5 lg:p-7 flex flex-col justify-end">
+                          <span className="font-extrabold text-[#ffb4b4] uppercase tracking-wider block text-xs sm:text-[13px] mb-1.5">
+                            {item.category}
+                          </span>
+                          <h3 className="text-base sm:text-xl lg:text-2xl font-black text-white leading-snug lg:leading-[1.3] group-hover:text-rose-200 transition-colors line-clamp-2 min-h-[2.6em]">
+                            {item.title}
+                          </h3>
+                          {item.subtitle && (
+                            <p className="mt-1.5 text-xs sm:text-sm text-slate-200 line-clamp-1 opacity-90 font-normal">
+                              {item.subtitle}
+                            </p>
+                          )}
+                          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-white/80 font-sans">
+                            <Clock className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                            <span>{item.date}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={`row-standard-${rIdx}`}
+                  className={`grid ${
+                    isTablet ? 'grid-cols-3' : 'grid-cols-4'
+                  } gap-6 lg:gap-7`}
+                >
+                  {row.items.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/news/${item.id}`}
+                      prefetch={false}
+                      className="group flex flex-col justify-between h-full cursor-pointer"
+                    >
+                      <div className="flex-1 flex flex-col">
+                        {/* Image on top: Golden Ratio 1.618/1 */}
+                        <div className="relative aspect-[1.618/1] overflow-hidden rounded-[10px] bg-[#0d1624] mb-3">
+                          <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
+                            <ScopeVisual
+                              imageUrl={item.imageUrl}
+                              type={item.imageType}
+                              category={item.categorySlug}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Category in Red */}
+                        <span className="text-[12px] sm:text-[13px] font-extrabold text-[#A42424] dark:text-[#F27676] block">
+                          {item.category}
+                        </span>
+
+                        {/* Title: 2 lines with consistent min-height */}
+                        <h3 className="mt-1.5 text-base sm:text-lg font-black leading-[1.4] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2 min-h-[2.8em]">
+                          {item.title}
+                        </h3>
+
+                        {/* Subtitle */}
+                        {item.subtitle && (
+                          <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#566274] dark:text-[#98a5b7] line-clamp-2">
+                            {item.subtitle}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Date at the bottom: pinned via mt-auto so dates are 100% horizontally aligned */}
+                      <div className="mt-auto pt-3 flex items-center gap-1.5 text-xs text-[#566274] dark:text-[#98a5b7]">
+                        <Clock className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                        <span>{item.date}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </section>
 
