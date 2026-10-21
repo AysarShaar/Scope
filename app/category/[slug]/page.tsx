@@ -16,7 +16,7 @@ export function generateStaticParams() {
   return Object.keys(categoryTranslations).map((slug) => ({ slug }));
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 24;
 
 interface PageProps {
   params: Promise<{ slug: string }>;

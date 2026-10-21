@@ -637,6 +637,29 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
     return rowsList;
   }, [latestNewsList, isTablet]);
 
+  // Group rows into 3-row sections to alternate background every 3 rows (desktop/tablet only)
+  // Even chunk (0, 2, ...): White / default background
+  // Odd chunk (1, 3, ...): Blue background matching ArticleNavigation picks section
+  const rowChunks = useMemo(() => {
+    const chunks: Array<{
+      chunkIndex: number;
+      isBlueBg: boolean;
+      rows: Array<{ type: 'standard' | 'featured'; items: ScopeArticle[] }>;
+    }> = [];
+
+    for (let i = 0; i < newsRows.length; i += 3) {
+      const chunkRows = newsRows.slice(i, i + 3);
+      const chunkIndex = Math.floor(i / 3);
+      chunks.push({
+        chunkIndex,
+        isBlueBg: chunkIndex % 2 === 1,
+        rows: chunkRows,
+      });
+    }
+
+    return chunks;
+  }, [newsRows]);
+
   // Auto rotate carousel indicators for mobile
   useEffect(() => {
     const timer = setInterval(() => {
@@ -728,37 +751,39 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
             {/* The Blue Box background: top edge positioned at the vertical midpoint of the image */}
             <div className="absolute inset-x-0 bottom-0 top-[50px] lg:top-[56px] bg-[#09263E]/70 rounded-none shadow-2xl -z-10" />
 
-            {/* 3 Static Cards */}
-            <div className="grid grid-cols-3 gap-4 lg:gap-5 relative z-10">
+            {/* 3 Static Cards with aligned dates matching mobile fixed title height */}
+            <div className="grid grid-cols-3 gap-4 lg:gap-5 relative z-10 items-stretch">
               {activeHeroCards.slice(0, 3).map((card) => (
                 <Link
                   key={card.id}
                   href={`/news/${card.id}`}
                   prefetch={false}
-                  className="group block cursor-pointer"
+                  className="group flex flex-col justify-between h-full cursor-pointer"
                 >
-                  {/* Golden Ratio Thumbnail 1.6:1 (Top half overlaps hero background, bottom half sits on blue box) */}
-                  <div className="relative aspect-[1.618/1] w-full rounded-none overflow-hidden bg-slate-900 shadow-md mb-3.5">
-                    <ScopeVisual
-                      imageUrl={card.imageUrl}
-                      type={card.imageType}
-                      category={card.categorySlug}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                  <div className="flex-1 flex flex-col">
+                    {/* Golden Ratio Thumbnail 1.6:1 (Top half overlaps hero background, bottom half sits on blue box) */}
+                    <div className="relative aspect-[1.618/1] w-full rounded-none overflow-hidden bg-slate-900 shadow-md mb-2.5 shrink-0">
+                      <ScopeVisual
+                        imageUrl={card.imageUrl}
+                        type={card.imageType}
+                        category={card.categorySlug}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+
+                    {/* White Category Tag Badge */}
+                    <span className="self-start inline-block px-1.5 py-0.5 text-[9px] font-bold bg-white text-[#09263E] rounded-none shadow-xs mb-1.5">
+                      {card.category}
+                    </span>
+
+                    {/* Fixed 3-line title height: ensures dates are horizontally aligned on the same baseline across all cards */}
+                    <h4 className="text-[11px] lg:text-xs font-bold text-white group-hover:text-blue-200 transition-colors line-clamp-3 leading-snug h-[46px] lg:h-[50px] overflow-hidden text-ellipsis">
+                      {card.title}
+                    </h4>
                   </div>
 
-                  {/* White Category Tag Badge */}
-                  <span className="inline-block px-1.5 py-0.5 text-[9px] font-bold bg-white text-[#09263E] rounded-none shadow-xs mb-2">
-                    {card.category}
-                  </span>
-
-                  {/* Title (Allowed up to 3 lines) */}
-                  <h4 className="text-[11px] lg:text-xs font-bold text-white group-hover:text-blue-200 transition-colors line-clamp-3 leading-snug">
-                    {card.title}
-                  </h4>
-
-                  {/* Date */}
-                  <p className="text-[9px] lg:text-[10px] text-slate-300 font-sans mt-1.5">
+                  {/* Date pinned to bottom */}
+                  <p className="text-[9px] lg:text-[10px] text-slate-300 font-sans mt-auto pt-1.5">
                     {card.date}
                   </p>
                 </Link>
@@ -826,145 +851,102 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
       </section>
 
       {/* ============================================================ */}
-      {/* REST OF PAGE CONTENT (Contained in max-w-[1480px]) */}
+      {/* 2. LATEST NEWS HEADER & MOBILE VIEW (Contained in max-w-[1480px]) */}
       {/* ============================================================ */}
-      <div className="w-full max-w-[1480px] mx-auto px-4 sm:px-6 space-y-10 pt-10 pb-6">
-        {/* ============================================================ */}
-        {/* 2. LATEST NEWS SECTION (Styled like 'تقارير ذات صلة' in Article page) */}
-        {/* ============================================================ */}
-        <section className="w-full space-y-6">
-          {/* Section Header with Red Vertical Bar */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-2.5">
-              <span className="w-1.5 h-6 bg-[#A42424] rounded-full inline-block" />
-              <h2 className="text-xl sm:text-2xl font-black text-[#101722] dark:text-[#f0f3f8] tracking-tight">
-                {lang === 'AR' ? 'آخر الأخبار' : 'LATEST NEWS'}
-              </h2>
-            </div>
+      <div className="w-full max-w-[1480px] mx-auto px-4 sm:px-6 pt-10">
+        {/* Section Header with Red Vertical Bar */}
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-6">
+          <div className="flex items-center gap-2.5">
+            <span className="w-1.5 h-6 bg-[#A42424] rounded-full inline-block" />
+            <h2 className="text-xl sm:text-2xl font-black text-[#101722] dark:text-[#f0f3f8] tracking-tight">
+              {lang === 'AR' ? 'آخر الأخبار' : 'LATEST NEWS'}
+            </h2>
+          </div>
 
-            <button
-              onClick={onViewMoreNews}
-              className="text-xs sm:text-sm text-slate-500 hover:text-[#A42424] dark:hover:text-rose-400 font-semibold transition-colors"
+          <button
+            onClick={onViewMoreNews}
+            className="text-xs sm:text-sm text-slate-500 hover:text-[#A42424] dark:hover:text-rose-400 font-semibold transition-colors"
+          >
+            {lang === 'AR' ? 'عرض الكل' : 'View all'}
+          </button>
+        </div>
+
+        {/* Mobile View: Vertical list where images span full screen width (no alternating backgrounds) */}
+        <div className="md:hidden space-y-7 pb-8">
+          {latestNewsList.map((item) => (
+            <Link
+              key={item.id}
+              href={`/news/${item.id}`}
+              prefetch={false}
+              className="group block cursor-pointer border-b border-[#e5e9ef] dark:border-[#1e293b] pb-6 last:border-none"
             >
-              {lang === 'AR' ? 'عرض الكل' : 'View all'}
-            </button>
-          </div>
-
-          {/* Mobile View: Vertical list where images span full screen width */}
-          <div className="md:hidden space-y-7">
-            {latestNewsList.map((item) => (
-              <Link
-                key={item.id}
-                href={`/news/${item.id}`}
-                prefetch={false}
-                className="group block cursor-pointer border-b border-[#e5e9ef] dark:border-[#1e293b] pb-6 last:border-none"
-              >
-                {/* Full-width image across the entire mobile screen */}
-                <div className="relative aspect-[1.618/1] -mx-4 overflow-hidden rounded-none bg-[#0d1624] mb-3.5">
-                  <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]">
-                    <ScopeVisual
-                      imageUrl={item.imageUrl}
-                      type={(item as ScopeArticle).imageType}
-                      category={(item as ScopeArticle).categorySlug}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+              {/* Full-width image across the entire mobile screen */}
+              <div className="relative aspect-[1.618/1] -mx-4 overflow-hidden rounded-none bg-[#0d1624] mb-3.5">
+                <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]">
+                  <ScopeVisual
+                    imageUrl={item.imageUrl}
+                    type={(item as ScopeArticle).imageType}
+                    category={(item as ScopeArticle).categorySlug}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
+              </div>
 
-                {/* Content with natural page padding */}
-                <span className="text-[12px] font-extrabold text-[#A42424] dark:text-[#F27676] block">
-                  {item.category}
-                </span>
+              {/* Content with natural page padding */}
+              <span className="text-[12px] font-extrabold text-[#A42424] dark:text-[#F27676] block">
+                {item.category}
+              </span>
 
-                <h3 className="mt-1.5 text-base font-black leading-[1.4] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2">
-                  {item.title}
-                </h3>
+              <h3 className="mt-1.5 text-base font-black leading-[1.4] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2">
+                {item.title}
+              </h3>
 
-                {(item as ScopeArticle).subtitle && (
-                  <p className="mt-2 text-xs leading-relaxed text-[#566274] dark:text-[#98a5b7] line-clamp-2">
-                    {(item as ScopeArticle).subtitle}
-                  </p>
-                )}
+              {(item as ScopeArticle).subtitle && (
+                <p className="mt-2 text-xs leading-relaxed text-[#566274] dark:text-[#98a5b7] line-clamp-2">
+                  {(item as ScopeArticle).subtitle}
+                </p>
+              )}
 
-                <div className="mt-3 flex items-center gap-1.5 text-xs text-[#566274] dark:text-[#98a5b7]">
-                  <Clock className="w-3.5 h-3.5 opacity-70" />
-                  <span>{item.date}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+              <div className="mt-3 flex items-center gap-1.5 text-xs text-[#566274] dark:text-[#98a5b7]">
+                <Clock className="w-3.5 h-3.5 opacity-70" />
+                <span>{item.date}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
 
-          {/* Tablet & Desktop View: Organized in structured rows with alternating featured "مختارات" rows */}
-          <div className="hidden md:flex flex-col space-y-6 lg:space-y-7">
-            {newsRows.map((row, rIdx) => {
-              if (row.type === 'featured') {
-                return (
-                  <div
-                    key={`row-featured-${rIdx}`}
-                    className="grid grid-cols-2 gap-6 lg:gap-7"
-                  >
-                    {row.items.map((item) => (
-                      <Link
-                        key={item.id}
-                        href={`/news/${item.id}`}
-                        prefetch={false}
-                        className="group relative block overflow-hidden rounded-xl bg-[#0d1624] text-white isolate shadow-sm hover:shadow-xl transition-all aspect-[1.618/1] cursor-pointer"
-                      >
-                        {/* Golden ratio full-bleed background image */}
-                        <div className="absolute inset-0 -z-20 transition-transform duration-700 ease-out group-hover:scale-105">
-                          <ScopeVisual
-                            imageUrl={item.imageUrl}
-                            type={item.imageType}
-                            category={item.categorySlug}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Cinematic gradient overlay matching Article Navigation */}
-                        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[rgba(5,9,16,.96)] via-[rgba(5,9,16,.65)] via-50% to-[rgba(5,9,16,.08)] pointer-events-none" />
-
-                        {/* Bottom-aligned content overlay */}
-                        <div className="absolute inset-x-0 bottom-0 p-5 lg:p-7 flex flex-col justify-end">
-                          <span className="font-extrabold text-[#ffb4b4] uppercase tracking-wider block text-xs sm:text-[13px] mb-1.5">
-                            {item.category}
-                          </span>
-                          <h3 className="text-base sm:text-xl lg:text-2xl font-black text-white leading-snug lg:leading-[1.3] group-hover:text-rose-200 transition-colors line-clamp-2 min-h-[2.6em]">
-                            {item.title}
-                          </h3>
-                          {item.subtitle && (
-                            <p className="mt-1.5 text-xs sm:text-sm text-slate-200 line-clamp-1 opacity-90 font-normal">
-                              {item.subtitle}
-                            </p>
-                          )}
-                          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-white/80 font-sans">
-                            <Clock className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                            <span>{item.date}</span>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                );
-              }
-
-              return (
-                <div
-                  key={`row-standard-${rIdx}`}
-                  className={`grid ${
-                    isTablet ? 'grid-cols-3' : 'grid-cols-4'
-                  } gap-6 lg:gap-7`}
-                >
-                  {row.items.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={`/news/${item.id}`}
-                      prefetch={false}
-                      className="group flex flex-col justify-between h-full cursor-pointer"
+      {/* ============================================================ */}
+      {/* 3. TABLET & DESKTOP NEWS: Alternating backgrounds every 3 rows */}
+      {/* ============================================================ */}
+      <div className="hidden md:block w-full">
+        {rowChunks.map((chunk) => (
+          <div
+            key={`chunk-${chunk.chunkIndex}`}
+            className={
+              chunk.isBlueBg
+                ? 'w-full py-8 lg:py-10 bg-[#e8f0f7] dark:bg-[#0e1a2b] border-y border-[#d9e0e8] dark:border-[#212c3c] transition-colors my-2'
+                : 'w-full py-5 lg:py-6'
+            }
+          >
+            <div className="max-w-[1480px] mx-auto px-4 sm:px-6 space-y-6 lg:space-y-7">
+              {chunk.rows.map((row, rIdx) => {
+                const rowKey = `chunk-${chunk.chunkIndex}-row-${rIdx}`;
+                if (row.type === 'featured') {
+                  return (
+                    <div
+                      key={rowKey}
+                      className="grid grid-cols-2 gap-6 lg:gap-7"
                     >
-                      <div className="flex-1 flex flex-col">
-                        {/* Image on top: Golden Ratio 1.618/1 */}
-                        <div className="relative aspect-[1.618/1] overflow-hidden rounded-[10px] bg-[#0d1624] mb-3">
-                          <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
+                      {row.items.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={`/news/${item.id}`}
+                          prefetch={false}
+                          className="group relative block overflow-hidden rounded-xl bg-[#0d1624] text-white isolate shadow-sm hover:shadow-xl transition-all aspect-[1.618/1] cursor-pointer"
+                        >
+                          {/* Golden ratio full-bleed background image */}
+                          <div className="absolute inset-0 -z-20 transition-transform duration-700 ease-out group-hover:scale-105">
                             <ScopeVisual
                               imageUrl={item.imageUrl}
                               type={item.imageType}
@@ -972,51 +954,107 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
                               className="w-full h-full object-cover"
                             />
                           </div>
+
+                          {/* Cinematic gradient overlay matching Article Navigation */}
+                          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[rgba(5,9,16,.96)] via-[rgba(5,9,16,.65)] via-50% to-[rgba(5,9,16,.08)] pointer-events-none" />
+
+                          {/* Bottom-aligned content overlay */}
+                          <div className="absolute inset-x-0 bottom-0 p-5 lg:p-7 flex flex-col justify-end">
+                            <span className="font-extrabold text-[#ffb4b4] uppercase tracking-wider block text-xs sm:text-[13px] mb-1.5">
+                              {item.category}
+                            </span>
+                            <h3 className="text-base sm:text-xl lg:text-2xl font-black text-white leading-snug lg:leading-[1.3] group-hover:text-rose-200 transition-colors line-clamp-2 min-h-[2.6em]">
+                              {item.title}
+                            </h3>
+                            {item.subtitle && (
+                              <p className="mt-1.5 text-xs sm:text-sm text-slate-200 line-clamp-1 opacity-90 font-normal">
+                                {item.subtitle}
+                              </p>
+                            )}
+                            <div className="mt-2.5 flex items-center gap-1.5 text-xs text-white/80 font-sans">
+                              <Clock className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                              <span>{item.date}</span>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={rowKey}
+                    className={`grid ${
+                      isTablet ? 'grid-cols-3' : 'grid-cols-4'
+                    } gap-6 lg:gap-7`}
+                  >
+                    {row.items.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/news/${item.id}`}
+                        prefetch={false}
+                        className="group flex flex-col justify-between h-full cursor-pointer"
+                      >
+                        <div className="flex-1 flex flex-col">
+                          {/* Image on top: Golden Ratio 1.618/1 */}
+                          <div className="relative aspect-[1.618/1] overflow-hidden rounded-[10px] bg-[#0d1624] mb-3">
+                            <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
+                              <ScopeVisual
+                                imageUrl={item.imageUrl}
+                                type={item.imageType}
+                                category={item.categorySlug}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Category in Red */}
+                          <span className="text-[12px] sm:text-[13px] font-extrabold text-[#A42424] dark:text-[#F27676] block">
+                            {item.category}
+                          </span>
+
+                          {/* Title: 2 lines with consistent min-height */}
+                          <h3 className="mt-1.5 text-base sm:text-lg font-black leading-[1.4] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2 min-h-[2.8em]">
+                            {item.title}
+                          </h3>
+
+                          {/* Subtitle */}
+                          {item.subtitle && (
+                            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#566274] dark:text-[#98a5b7] line-clamp-2">
+                              {item.subtitle}
+                            </p>
+                          )}
                         </div>
 
-                        {/* Category in Red */}
-                        <span className="text-[12px] sm:text-[13px] font-extrabold text-[#A42424] dark:text-[#F27676] block">
-                          {item.category}
-                        </span>
-
-                        {/* Title: 2 lines with consistent min-height */}
-                        <h3 className="mt-1.5 text-base sm:text-lg font-black leading-[1.4] text-[#101722] dark:text-[#f0f3f8] transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2 min-h-[2.8em]">
-                          {item.title}
-                        </h3>
-
-                        {/* Subtitle */}
-                        {item.subtitle && (
-                          <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#566274] dark:text-[#98a5b7] line-clamp-2">
-                            {item.subtitle}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Date at the bottom: pinned via mt-auto so dates are 100% horizontally aligned */}
-                      <div className="mt-auto pt-3 flex items-center gap-1.5 text-xs text-[#566274] dark:text-[#98a5b7]">
-                        <Clock className="w-3.5 h-3.5 opacity-70 shrink-0" />
-                        <span>{item.date}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              );
-            })}
+                        {/* Date at the bottom: pinned via mt-auto so dates are 100% horizontally aligned */}
+                        <div className="mt-auto pt-3 flex items-center gap-1.5 text-xs text-[#566274] dark:text-[#98a5b7]">
+                          <Clock className="w-3.5 h-3.5 opacity-70 shrink-0" />
+                          <span>{item.date}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </section>
+        ))}
+      </div>
 
-        {/* ============================================================ */}
-        {/* 4. SHOWS & PROGRAMS ROW */}
-        {/* ============================================================ */}
-        {showProgramsInside && (
+      {/* ============================================================ */}
+      {/* 4. SHOWS & PROGRAMS ROW */}
+      {/* ============================================================ */}
+      {showProgramsInside && (
+        <div className="w-full max-w-[1480px] mx-auto px-4 sm:px-6 pt-4 pb-8">
           <ScopeProgramsRow
             shows={shows}
             isLoading={isLoading}
             onOpenShow={onOpenShow}
             onViewAllShows={onViewAllShows}
           />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -266,8 +266,8 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
             </div>
           )}
 
-          {/* Mobile Navigation Bar: All 8 sections fitted on one line */}
-          <div className="md:hidden py-1.5 px-1.5 sm:px-3 overflow-x-hidden">
+          {/* Mobile Navigation Bar: All 8 sections fitted on one line without horizontal scroll */}
+          <div className="md:hidden py-1.5 px-1 sm:px-3 overflow-x-hidden">
             <nav className="flex items-center justify-between w-full flex-nowrap text-center">
               {mobileNavItems.map((item) => {
                 const isActive = currentTab === item.id;
@@ -276,7 +276,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
                     key={item.id}
                     href={item.href}
                     onClick={() => onSelectTab && onSelectTab(item.id)}
-                    className={`text-[10px] min-[360px]:text-[11px] min-[400px]:text-[12px] font-semibold tracking-tight transition-colors py-0.5 px-0.5 relative whitespace-nowrap shrink-0 ${
+                    className={`text-[11px] min-[360px]:text-[12px] min-[400px]:text-[13px] font-semibold tracking-tight transition-colors py-0.5 px-0.5 relative whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'text-white font-bold'
                         : 'text-slate-300 hover:text-white'
