@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "scopes-media",
+  "name": "scopes-media-2",
   // Custom entry that wraps the OpenNext worker with a page cache (see worker.ts).
   "main": "worker.ts",
   // Traffic must come through scope-media.net (where the Cloudflare Cache Rules live), not workers.dev.
@@ -27,7 +27,7 @@
     {
       // Self-reference binding used by OpenNext for caching/revalidation
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "scopes-media"
+      "service": "scopes-media-2"
     }
   ],
   // Lets worker.ts key its page cache on the deployed version (a deploy invalidates old HTML).

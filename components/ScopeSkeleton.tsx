@@ -230,10 +230,10 @@ export function ScopeArticleSkeleton() {
         </div>
       </div>
 
-      <div className="max-w-[1480px] mx-auto w-full px-3 sm:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="max-w-[1480px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-10">
+        <div className="flex flex-col lg:flex-row-reverse items-start justify-between gap-8 lg:gap-10 xl:gap-14">
           
-          <div className="lg:col-span-8 space-y-6">
+          <div className="flex-1 min-w-0 max-w-[880px] xl:max-w-[920px] w-full space-y-6">
             <div className="w-full bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800/80 rounded-xl p-6 sm:p-10 space-y-6">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                 <SkeletonBox className="w-20 h-6 rounded-md" />
@@ -273,7 +273,7 @@ export function ScopeArticleSkeleton() {
             </div>
           </div>
 
-          <aside className="lg:col-span-4 space-y-4">
+          <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 space-y-4">
             <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-4">
               <SkeletonBox className="w-28 h-5 rounded" />
               <div className="space-y-3">

@@ -236,12 +236,66 @@ export default async function ArticlePage({ params }: PageProps) {
 
       <main className="flex-1 w-full">
         <div className="max-w-[1480px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-10">
-          <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-10 xl:gap-14 relative">
+          <div className="flex flex-col lg:flex-row-reverse items-start justify-between gap-8 lg:gap-10 xl:gap-14 relative">
+            {/* Main Article (المقال والصورة) */}
+            {/* Mobile: Top. Desktop (lg): Left in RTL (Arabic), Right in LTR (English) */}
+            <article className="flex-1 min-w-0 max-w-[880px] xl:max-w-[920px] w-full space-y-6 font-article">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800/80 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <Link
+                    href={`/category/${article.categorySlug}`}
+                    prefetch={false}
+                    className="text-xs sm:text-[13px] font-bold text-[#A42424] dark:text-[#E05252] hover:opacity-80 transition-opacity"
+                  >
+                    {article.category}
+                  </Link>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-sans text-[13px]">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{article.date}</span>
+                </div>
+              </div>
+
+              <h1 data-speakable="headline" className="text-2xl sm:text-3xl md:text-4xl lg:text-[40px] xl:text-[42px] font-black text-slate-900 dark:text-white leading-[1.3] rtl:text-right ltr:text-left tracking-tight">
+                {article.title}
+              </h1>
+
+              {article.subtitle && (
+                <p data-speakable="summary" className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium rtl:text-right ltr:text-left">
+                  {article.subtitle}
+                </p>
+              )}
+
+              <div className="space-y-2">
+                <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden shadow-xs bg-slate-950 border border-slate-200/60 dark:border-slate-800">
+                  <ScopeVisual imageUrl={article.imageUrl} type={article.imageType} className="w-full h-full object-cover" priority />
+                </div>
+                {article.caption && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-sans pt-1">
+                    {article.caption}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 rtl:text-right ltr:text-left [word-spacing:-0.03em]">
+                {article.content && article.content.length > 0 ? (
+                  <ArticleBody content={article.content} title={article.title} />
+                ) : (
+                  <p>
+                    تغطية استقصائية شاملة ومستمرة من غرفة أخبار SCOPE MEDIA لكافة المستجدات والتطورات المتعلقة بهذا الملف، مع متابعة دقيقة لمواقف الأطراف الفاعلة وانعكاساتها المباشرة على المشهد العام.
+                  </p>
+                )}
+              </div>
+
+              <ArticleInteractiveBar articleId={article.id} title={article.title} />
+            </article>
+
             {/* Sidebar: Related Articles (مقالات ذات صلة) */}
-            {/* On mobile: order-2 (placed below article) */}
-            {/* On desktop: order-1 (placed at reading start: right in AR, left in EN) */}
+            {/* Mobile: Bottom (under article). Desktop (lg): Right in RTL (Arabic), Left in LTR (English) */}
+            {/* Sticky to scroll naturally with the page, without independent scrollbar */}
             {relatedArticles.length > 0 && (
-              <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 order-2 lg:order-1 pt-8 lg:pt-0 border-t lg:border-t-0 border-slate-200 dark:border-slate-800 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-6.5rem)] lg:overflow-y-auto no-scrollbar z-10">
+              <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 pt-8 lg:pt-0 border-t lg:border-t-0 border-slate-200 dark:border-slate-800 lg:sticky lg:top-24 lg:self-start z-10">
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800 mb-5">
                   <span className="w-1.5 h-5 bg-[#A42424] rounded-full inline-block" />
                   <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -296,61 +350,6 @@ export default async function ArticlePage({ params }: PageProps) {
                 </div>
               </aside>
             )}
-
-            {/* Main Article (المقال والصورة) */}
-            {/* On mobile: order-1 (placed first) */}
-            {/* On desktop: order-2 (placed at reading end: left in AR, right in EN) */}
-            <article className="flex-1 min-w-0 max-w-[880px] xl:max-w-[920px] w-full space-y-6 font-article order-1 lg:order-2">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800/80 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <Link
-                    href={`/category/${article.categorySlug}`}
-                    prefetch={false}
-                    className="text-xs sm:text-[13px] font-bold text-[#A42424] dark:text-[#E05252] hover:opacity-80 transition-opacity"
-                  >
-                    {article.category}
-                  </Link>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-sans text-[13px]">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{article.date}</span>
-                </div>
-              </div>
-
-              <h1 data-speakable="headline" className="text-2xl sm:text-3xl md:text-4xl lg:text-[40px] xl:text-[42px] font-black text-slate-900 dark:text-white leading-[1.3] rtl:text-right ltr:text-left tracking-tight">
-                {article.title}
-              </h1>
-
-              {article.subtitle && (
-                <p data-speakable="summary" className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-medium rtl:text-right ltr:text-left">
-                  {article.subtitle}
-                </p>
-              )}
-
-              <div className="space-y-2">
-                <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden shadow-xs bg-slate-950 border border-slate-200/60 dark:border-slate-800">
-                  <ScopeVisual imageUrl={article.imageUrl} type={article.imageType} className="w-full h-full object-cover" priority />
-                </div>
-                {article.caption && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-sans pt-1">
-                    {article.caption}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 rtl:text-right ltr:text-left [word-spacing:-0.03em]">
-                {article.content && article.content.length > 0 ? (
-                  <ArticleBody content={article.content} title={article.title} />
-                ) : (
-                  <p>
-                    تغطية استقصائية شاملة ومستمرة من غرفة أخبار SCOPE MEDIA لكافة المستجدات والتطورات المتعلقة بهذا الملف، مع متابعة دقيقة لمواقف الأطراف الفاعلة وانعكاساتها المباشرة على المشهد العام.
-                  </p>
-                )}
-              </div>
-
-              <ArticleInteractiveBar articleId={article.id} title={article.title} />
-            </article>
           </div>
         </div>
 
