@@ -63,9 +63,8 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
     }
   }, [initialSearchQuery]);
 
-  // Scroll listener for transparent overlay header on hero
+  // Scroll listener for header & ticker states
   useEffect(() => {
-    if (!transparentOverlay) return;
     const handleScroll = () => {
       if (window.scrollY > 40) {
         setIsScrolled(true);
@@ -76,7 +75,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [transparentOverlay]);
+  }, []);
 
   useEffect(() => {
     if (breakingNews !== undefined) return;
@@ -128,12 +127,14 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
   // All 8 sections shown on mobile in one line
   const mobileNavItems = allNavItems;
 
+  const hasTicker = Boolean(activeBreakingNews && activeBreakingNews.length > 0);
+
   // Dynamic header styling: overlaying hero or solid
   const headerContainerClass = transparentOverlay
     ? isScrolled
-      ? 'fixed top-0 inset-x-0 z-40 bg-[#0a1526]/95 backdrop-blur-md shadow-lg border-b border-white/10 text-white transition-all duration-300'
-      : 'absolute top-0 inset-x-0 z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent border-b border-white/10 text-white transition-all duration-300'
-    : 'sticky top-0 z-40 bg-[#0a1526] border-b border-white/10 shadow-sm text-white transition-colors duration-200';
+      ? `fixed top-0 inset-x-0 z-40 bg-[#0a1526]/85 backdrop-blur-md text-white transition-all duration-300 ${hasTicker ? '' : 'border-b border-white/10'}`
+      : `absolute top-0 inset-x-0 z-40 bg-gradient-to-b from-black/80 via-black/40 to-transparent text-white transition-all duration-300 ${hasTicker ? '' : 'border-b border-white/10'}`
+    : `sticky top-0 z-40 bg-[#0a1526]/90 backdrop-blur-md text-white transition-colors duration-200 ${hasTicker ? '' : 'border-b border-white/10'}`;
 
   return (
     <>
@@ -211,7 +212,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
               <Link
                 href="/"
                 onClick={() => onSelectTab && onSelectTab('home')}
-                className="flex items-center justify-center shrink-0"
+                className="flex items-center justify-center shrink-0 translate-y-1 sm:translate-y-1.5"
                 aria-label="SCOPE MEDIA"
               >
                 <ScopeLogo variant="white" animated={true} className="h-6 sm:h-7 w-auto drop-shadow-md" />
@@ -394,14 +395,14 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
             </div>
           </div>
         </div>
-      </header>
 
-      {/* 
-        Sticky Breaking Ticker Bar - temporarily removed per user request (code preserved)
-        <div className="sticky top-0 z-30 w-full shadow-sm bg-white dark:bg-[#0c1828]">
-          <ScopeBreakingTicker items={activeBreakingNews} />
-        </div>
-      */}
+        {/* Breaking News Ticker Bar directly under header */}
+        {hasTicker && (
+          <div className="w-full border-t border-white/10 bg-transparent">
+            <ScopeBreakingTicker items={activeBreakingNews} />
+          </div>
+        )}
+      </header>
     </>
   );
 };

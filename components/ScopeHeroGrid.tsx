@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from './NavLink';
 import {
   Play,
@@ -637,10 +637,10 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
     return rowsList;
   }, [latestNewsList, isTablet]);
 
-  // Auto rotate carousel indicators
+  // Auto rotate carousel indicators for mobile
   useEffect(() => {
     const timer = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % 5);
+      setCarouselIndex((prev) => (prev + 1) % 3);
     }, 6000);
     return () => clearInterval(timer);
   }, []);
@@ -684,7 +684,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
         </div>
 
         {/* Hero Content Container (Padded at top to sit below transparent overlay header) */}
-        <div className="relative z-10 w-full max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 pt-30 sm:pt-32 md:pt-36 lg:pt-40 pb-6 sm:pb-8 flex-1 flex flex-col justify-between">
+        <div className="relative z-10 w-full max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 pt-36 sm:pt-38 md:pt-36 lg:pt-40 pb-6 sm:pb-8 flex-1 flex flex-col justify-between">
           {/* Top/Main Lead News Content (Desktop.jpg left side) */}
           <div className="max-w-xl lg:max-w-2xl space-y-3 sm:space-y-4 pt-4 md:pt-8">
             {/* Category / Slug in Red instead of Breaking News */}
