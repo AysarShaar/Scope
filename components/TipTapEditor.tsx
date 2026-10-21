@@ -368,11 +368,33 @@ export function TipTapEditor({
           outline: none;
           color: #1e293b;
           background-color: transparent;
-          font-size: 15px;
+          font-size: 15.5px;
           line-height: 1.85;
-          font-family: 'Alexandria', 'IBM Plex Sans Arabic', 'Tajawal', sans-serif;
+          font-family: var(--font-readex-pro), 'Readex Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           direction: rtl;
           transition: color 0.2s ease;
+          word-spacing: -0.03em !important;
+          letter-spacing: 0 !important;
+          text-align: start !important;
+          font-weight: 400 !important;
+        }
+
+        .tiptap-editor-body *,
+        .tiptap-editor-body p {
+          font-family: var(--font-readex-pro), 'Readex Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          word-spacing: -0.03em !important;
+          letter-spacing: 0 !important;
+          font-weight: 400 !important;
+        }
+
+        .tiptap-editor-body h1,
+        .tiptap-editor-body h2,
+        .tiptap-editor-body h3,
+        .tiptap-editor-body strong,
+        .tiptap-editor-body b,
+        .tiptap-editor-body blockquote {
+          font-family: var(--font-readex-pro), 'Readex Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-weight: 600 !important;
         }
 
         /* Dark mode support */
@@ -382,7 +404,7 @@ export function TipTapEditor({
 
         .tiptap-editor-body h1 {
           font-size: 1.85em;
-          font-weight: 800;
+          font-weight: 600;
           margin: 1.1em 0 0.4em;
           color: #0f172a;
           line-height: 1.3;
@@ -393,7 +415,7 @@ export function TipTapEditor({
 
         .tiptap-editor-body h2 {
           font-size: 1.45em;
-          font-weight: 700;
+          font-weight: 600;
           margin: 1em 0 0.35em;
           color: #1e293b;
           line-height: 1.35;
@@ -413,25 +435,38 @@ export function TipTapEditor({
         }
 
         .tiptap-editor-body p {
+          font-weight: 400;
           margin: 0.6em 0;
         }
 
         .tiptap-editor-body blockquote {
-          border-right: 4px solid #A42424;
-          padding: 10px 18px;
-          margin: 14px 0;
-          background: rgba(225, 29, 72, 0.05);
-          border-radius: 0 10px 10px 0;
-          color: #334155;
-          font-style: italic;
+          margin: 1.4em 0;
+          padding: 0.2em 1em;
+          border-inline-start: 4px solid #A42424;
+          background: none;
+          border-radius: 0;
+          font-style: normal;
+          font-weight: 600;
+          font-size: 1.1em;
+          line-height: 1.65;
+          color: #0F4468;
+          text-align: start !important;
+          word-spacing: normal !important;
+          letter-spacing: normal !important;
+        }
+        .tiptap-editor-body blockquote p {
+          margin: 0;
+          text-align: start !important;
+          word-spacing: normal !important;
+          letter-spacing: normal !important;
         }
         .dark .tiptap-editor-body blockquote {
-          background: rgba(225, 29, 72, 0.12);
-          color: #cbd5e1;
+          background: none;
+          color: #7dd3fc;
         }
 
         .tiptap-editor-body ul, .tiptap-editor-body ol {
-          padding-right: 24px;
+          padding-inline-start: 24px;
           margin: 10px 0;
         }
         .tiptap-editor-body ul {
@@ -442,6 +477,22 @@ export function TipTapEditor({
         }
         .tiptap-editor-body li {
           margin: 5px 0;
+        }
+        .tiptap-editor-body ul li::marker {
+          color: #A42424;
+        }
+        .tiptap-editor-body ol li::marker {
+          color: #A42424;
+          font-weight: 700;
+          font-size: 1.15em;
+        }
+        .dark .tiptap-editor-body ul li::marker {
+          color: #E05252;
+        }
+        .dark .tiptap-editor-body ol li::marker {
+          color: #E05252;
+          font-weight: 700;
+          font-size: 1.15em;
         }
 
         .tiptap-editor-body code {

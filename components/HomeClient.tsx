@@ -51,7 +51,7 @@ export default function HomeClient({ initialData }: { initialData: HomeBootstrap
         if (!data) {
           // Fallback: the combined endpoint failed, use the individual ones.
           const [articlesData, programsRes] = await Promise.all([
-            newsService.getArticles(undefined, undefined, 14, 1, false),
+            newsService.getArticles(undefined, undefined, 36, 1, false),
             fetch('/api/programs').then((r) => r.json()).catch(() => null),
           ]);
           data = {

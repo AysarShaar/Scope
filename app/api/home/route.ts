@@ -6,7 +6,7 @@ import { getHomeBootstrap } from '../../../lib/server/home';
 export async function GET(request: NextRequest) {
   return withEdgeCache(request, 60, async () => {
     try {
-      const data = await getHomeBootstrap();
+      const data = await getHomeBootstrap(36);
       return NextResponse.json(
         { success: true, data },
         { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } },

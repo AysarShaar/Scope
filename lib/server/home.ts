@@ -33,7 +33,7 @@ async function getLiveStreamId(): Promise<string> {
  * Everything the home page needs in one go: the latest articles, the programs, the breaking ticker
  * and the live stream id.
  */
-export async function getHomeBootstrap(articleLimit = 14): Promise<HomeBootstrap> {
+export async function getHomeBootstrap(articleLimit = 36): Promise<HomeBootstrap> {
   const [articles, specialArticles, programs, breakingItems, liveStreamId] = await Promise.all([
     getServerArticles(undefined, articleLimit),
     getServerSpecialArticles(4),

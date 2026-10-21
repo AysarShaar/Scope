@@ -106,24 +106,27 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
     router.push(`/search?q=${encodeURIComponent(cleanQuery)}`);
   };
 
-  // Nav menus matching Desktop.jpg split layout with 8 original sections (Home removed as logo serves as Home):
-  // 4 items on start side: News, Politics, Economy, Society
-  // 4 items on end side: Culture, Science, Programs, Videos
+  // Nav menus matching Desktop split layout with 8 sections:
+  // 4 items on start side: Home, News, Economy, Culture
+  // 4 items on end side: Society, Science, Programs, Videos
   const leftNavItems = [
+    { id: 'home', label: t.nav.home, href: '/' },
     { id: 'news', label: t.nav.news, href: '/category/news' },
-    { id: 'politics', label: t.nav.politics, href: '/category/politics' },
     { id: 'economy', label: t.nav.economy, href: '/category/economy' },
-    { id: 'society', label: t.nav.society, href: '/category/society' },
+    { id: 'culture', label: t.nav.culture, href: '/category/culture' },
   ];
 
   const rightNavItems = [
-    { id: 'culture', label: t.nav.culture, href: '/category/culture' },
+    { id: 'society', label: t.nav.society, href: '/category/society' },
     { id: 'science', label: t.nav.science, href: '/category/science' },
     { id: 'programs', label: t.nav.programs, href: '/programs' },
     { id: 'videos', label: t.nav.videos, href: '/videos' },
   ];
 
   const allNavItems = [...leftNavItems, ...rightNavItems];
+
+  // All 8 sections shown on mobile in one line
+  const mobileNavItems = allNavItems;
 
   // Dynamic header styling: overlaying hero or solid
   const headerContainerClass = transparentOverlay
@@ -262,17 +265,17 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
             </div>
           )}
 
-          {/* Mobile Navigation Bar: Horizontal sections directly under header in a second line */}
-          <div className="md:hidden border-t border-white/10 overflow-x-auto no-scrollbar py-2 -mx-4 px-4 sm:-mx-6 sm:px-6">
-            <nav className="flex items-center gap-4 sm:gap-5 whitespace-nowrap min-w-max">
-              {allNavItems.map((item) => {
+          {/* Mobile Navigation Bar: All 8 sections fitted on one line */}
+          <div className="md:hidden py-1.5 px-1.5 sm:px-3 overflow-x-hidden">
+            <nav className="flex items-center justify-between w-full flex-nowrap text-center">
+              {mobileNavItems.map((item) => {
                 const isActive = currentTab === item.id;
                 return (
                   <Link
                     key={item.id}
                     href={item.href}
                     onClick={() => onSelectTab && onSelectTab(item.id)}
-                    className={`text-xs font-semibold tracking-wide transition-colors py-0.5 relative shrink-0 ${
+                    className={`text-[10px] min-[360px]:text-[11px] min-[400px]:text-[12px] font-semibold tracking-tight transition-colors py-0.5 px-0.5 relative whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'text-white font-bold'
                         : 'text-slate-300 hover:text-white'
@@ -289,7 +292,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
           </div>
 
           {/* Desktop Navigation Bar: Exact Centered Logo & Nav flanked around it */}
-          <div className="hidden md:flex items-center justify-between h-16 lg:h-18 relative">
+          <div className="hidden md:flex items-center justify-between h-16 lg:h-20 relative">
             {/* Far Start Side: Search & Language Switcher */}
             <div className="flex items-center gap-2.5 lg:gap-3 shrink-0 z-10">
               {/* Search Toggle */}
@@ -316,9 +319,9 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
             </div>
 
             {/* Exactly Centered Navigation Block (Logo sits precisely at 50% midpoint of header) */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center justify-center gap-2 lg:gap-3.5 xl:gap-5 z-20 pointer-events-auto">
+            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center justify-center gap-3.5 lg:gap-6 xl:gap-8 z-20 pointer-events-auto">
               {/* Left Nav Menu (4 items) */}
-              <nav className="flex items-center gap-2 lg:gap-3.5 xl:gap-4.5 justify-end whitespace-nowrap">
+              <nav className="flex items-center gap-3 lg:gap-5 xl:gap-7 justify-end whitespace-nowrap">
                 {leftNavItems.map((item) => {
                   const isActive = currentTab === item.id;
                   return (
@@ -326,13 +329,13 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
                       key={item.id}
                       href={item.href}
                       onClick={() => onSelectTab && onSelectTab(item.id)}
-                      className={`text-xs lg:text-[13px] xl:text-sm font-semibold tracking-wide transition-colors hover:text-white cursor-pointer relative py-1 ${
+                      className={`text-[14px] lg:text-[16px] xl:text-[17px] font-semibold tracking-wide transition-colors hover:text-white cursor-pointer relative py-1 ${
                         isActive ? 'text-white font-bold' : 'text-slate-200/90'
                       }`}
                     >
                       <span>{item.label}</span>
                       {isActive && (
-                        <span className="absolute -bottom-1 inset-x-0 h-[2px] bg-[#A42424] rounded-full" />
+                        <span className="absolute -bottom-1 inset-x-0 h-[2.5px] bg-[#A42424] rounded-full" />
                       )}
                     </Link>
                   );
@@ -340,7 +343,7 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
               </nav>
 
               {/* Centered SCOPE MEDIA Logo */}
-              <div className="shrink-0 px-2 lg:px-3">
+              <div className="shrink-0 px-3 lg:px-5 xl:px-6">
                 <Link
                   href="/"
                   onClick={() => onSelectTab && onSelectTab('home')}
@@ -350,13 +353,13 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
                   <ScopeLogo
                     variant="white"
                     animated={true}
-                    className="h-8 lg:h-9 w-auto drop-shadow-md"
+                    className="h-8.5 lg:h-10 w-auto drop-shadow-md"
                   />
                 </Link>
               </div>
 
               {/* Right Nav Menu (4 items) */}
-              <nav className="flex items-center gap-2 lg:gap-3.5 xl:gap-4.5 justify-start whitespace-nowrap">
+              <nav className="flex items-center gap-3 lg:gap-5 xl:gap-7 justify-start whitespace-nowrap">
                 {rightNavItems.map((item) => {
                   const isActive = currentTab === item.id;
                   return (
@@ -364,13 +367,13 @@ export const ScopeHeader: React.FC<ScopeHeaderProps> = ({
                       key={item.id}
                       href={item.href}
                       onClick={() => onSelectTab && onSelectTab(item.id)}
-                      className={`text-xs lg:text-[13px] xl:text-sm font-semibold tracking-wide transition-colors hover:text-white cursor-pointer relative py-1 ${
+                      className={`text-[14px] lg:text-[16px] xl:text-[17px] font-semibold tracking-wide transition-colors hover:text-white cursor-pointer relative py-1 ${
                         isActive ? 'text-white font-bold' : 'text-slate-200/90'
                       }`}
                     >
                       <span>{item.label}</span>
                       {isActive && (
-                        <span className="absolute -bottom-1 inset-x-0 h-[2px] bg-[#A42424] rounded-full" />
+                        <span className="absolute -bottom-1 inset-x-0 h-[2.5px] bg-[#A42424] rounded-full" />
                       )}
                     </Link>
                   );

@@ -35,22 +35,22 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
             <ul className="space-y-2 text-slate-300">
               <li>
                 <Link
+                  href="/"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('home')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.home}
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/category/news"
                   prefetch={false}
                   onClick={() => onSelectTab?.('news')}
                   className="hover:text-white transition-colors cursor-pointer block"
                 >
                   {t.nav.news}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/category/politics"
-                  prefetch={false}
-                  onClick={() => onSelectTab?.('politics')}
-                  className="hover:text-white transition-colors cursor-pointer block"
-                >
-                  {t.nav.politics}
                 </Link>
               </li>
               <li>
@@ -65,22 +65,22 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
               </li>
               <li>
                 <Link
-                  href="/category/society"
-                  prefetch={false}
-                  onClick={() => onSelectTab?.('society')}
-                  className="hover:text-white transition-colors cursor-pointer block"
-                >
-                  {t.nav.society}
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/category/culture"
                   prefetch={false}
                   onClick={() => onSelectTab?.('culture')}
                   className="hover:text-white transition-colors cursor-pointer block"
                 >
                   {t.nav.culture}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/category/society"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('society')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.society}
                 </Link>
               </li>
               <li>

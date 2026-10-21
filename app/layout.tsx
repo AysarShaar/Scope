@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from 'next';
-import { Cairo } from 'next/font/google';
+import { Cairo, Readex_Pro } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '../context/ThemeContext';
 import { LanguageProvider } from '../context/LanguageContext';
 import { safeJsonLd } from '../lib/safeJsonLd';
 import { getSiteUrl } from '../lib/site';
 import { FACEBOOK_URL, INSTAGRAM_URL } from '../lib/socialLinks';
+
+const readexPro = Readex_Pro({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-readex-pro',
+  display: 'swap',
+});
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -104,7 +111,7 @@ export default function RootLayout({
       lang="ar"
       dir="rtl"
       suppressHydrationWarning
-      className={cairo.variable}
+      className={`${readexPro.variable} ${cairo.variable}`}
     >
       <head>
         <script

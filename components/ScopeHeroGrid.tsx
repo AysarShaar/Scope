@@ -207,98 +207,381 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
 
   const activeHeroCards = heroCardArticles.length >= 3 ? heroCardArticles : fallbackCards;
 
-  // Latest news list (styled like 'تقارير ذات صلة' in Article page)
+  // Set of article IDs currently featured in the hero (lead article + 3 secondary cards)
+  const heroArticleIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (leadArticle?.id) ids.add(leadArticle.id);
+    activeHeroCards.slice(0, 3).forEach((card) => {
+      if (card?.id) ids.add(card.id);
+    });
+    return ids;
+  }, [leadArticle, activeHeroCards]);
+
+  // Fallback 24 distinct news cards across all categories
+  const fallbackNews24 = useMemo(() => [
+    {
+      id: 'news-1',
+      category: lang === 'AR' ? 'علوم' : 'SCIENCE',
+      categorySlug: 'science' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'طفرة جديدة في الذكاء الاصطناعي تثير جدلاً عالمياً حول قوانين الخصوصية'
+        : 'New AI Breakthrough Sparks Global Debate On Privacy Laws',
+      subtitle: lang === 'AR'
+        ? 'مخاوف متصاعدة بين الهيئات التنظيمية حول سلامة جمع واستخدام البيانات الرقمية في النماذج الحديثة.'
+        : 'Growing scrutiny across regulatory bodies over digital data protection and ethical model standards.',
+      date: lang === 'AR' ? 'منذ ساعة' : '1 hour ago',
+      imageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-2',
+      category: lang === 'AR' ? 'اقتصاد' : 'ECONOMY',
+      categorySlug: 'economy' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'الأسواق العالمية تتقلب عقب إعلان أسعار الفائدة من بنك الاحتياطي الفيدرالي'
+        : 'Global Markets Fluctuate Following Federal Reserve Interest Rates Announcement',
+      subtitle: lang === 'AR'
+        ? 'ردود فعل متباينة في مؤشرات الأسهم العالمية وترقب لتأثير القرارات على حركة التضخم.'
+        : 'Mixed reactions across major stock indices as analysts assess the longer-term inflationary trends.',
+      date: lang === 'AR' ? 'منذ ساعتين' : '2 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-3',
+      category: lang === 'AR' ? 'سياسة' : 'POLITICS',
+      categorySlug: 'politics' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'قمة دبلوماسية رفيعة تبحث اتفاقيات التهدئة والتعاون الاقتصادي الإقليمي'
+        : 'High-Level Diplomatic Summit Discusses Regional De-escalation Accords',
+      subtitle: lang === 'AR'
+        ? 'مفاوضات مكثفة بين قادة الدول لبناء تفاهمات مشتركة تعزز الاستقرار والأمن في المنطقة.'
+        : 'Intensive talks among international leaders aimed at building mutual stability frameworks.',
+      date: lang === 'AR' ? 'منذ ساعتين' : '2 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-4',
+      category: lang === 'AR' ? 'ثقافة' : 'CULTURE',
+      categorySlug: 'culture' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'معرض فني دولي يستعرض التراث المعماري القديم في العواصم التاريخية'
+        : 'International Art Exhibition Showcases Ancient Architectural Heritage',
+      subtitle: lang === 'AR'
+        ? 'أعمال توثيقية نادرة تسلط الضوء على الفنون المعمارية العريقة وأصالة التصميم عبر العصور.'
+        : 'Rare documentary artworks highlighting ancient architectural traditions across historical capitals.',
+      date: lang === 'AR' ? 'منذ 3 ساعات' : '3 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-5',
+      category: lang === 'AR' ? 'مجتمع' : 'SOCIETY',
+      categorySlug: 'society' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'مبادرات تطوعية شبابية تعزز الاستدامة البيئية في المدن الحضرية'
+        : 'Youth Volunteer Initiatives Promote Environmental Sustainability in Urban Cities',
+      subtitle: lang === 'AR'
+        ? 'حملات مجتمعية واسعة لزيادة المساحات الخضراء والحد من التلوث البيئي في الأحياء السكنية.'
+        : 'Broad community campaigns to expand green spaces and reduce urban pollution in residential areas.',
+      date: lang === 'AR' ? 'منذ 3 ساعات' : '3 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-6',
+      category: lang === 'AR' ? 'علوم' : 'SCIENCE',
+      categorySlug: 'science' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'اكتشاف كوكبي جديد يفتح آفاقاً جديدة في أبحاث الفضاء والفيزياء الفلكية'
+        : 'New Exoplanet Discovery Opens New Horizons in Astrophysics Research',
+      subtitle: lang === 'AR'
+        ? 'تلسكوبات فضائية ترصد غلافاً جوياً فريداً لكوكب خارج المجموعة الشمسية.'
+        : 'Deep space observatories detect a unique atmospheric composition on an exoplanet far beyond.',
+      date: lang === 'AR' ? 'منذ 4 ساعات' : '4 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-7',
+      category: lang === 'AR' ? 'اقتصاد' : 'ECONOMY',
+      categorySlug: 'economy' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'نمو ملحوظ في استثمارات الطاقة المتجددة والمشاريع الخضراء هذا الربع'
+        : 'Strong Growth in Renewable Energy and Green Projects Investment This Quarter',
+      subtitle: lang === 'AR'
+        ? 'تقارير مالية تؤكد ارتفاع تدفقات رؤوس الأموال نحو حلول الطاقة الشمسية وطاقة الرياح.'
+        : 'Financial data highlights increased capital flows toward sustainable power technologies.',
+      date: lang === 'AR' ? 'منذ 4 ساعات' : '4 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-8',
+      category: lang === 'AR' ? 'الأخبار' : 'NEWS',
+      categorySlug: 'news' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'افتتاح مؤتمر التكنولوجيا والابتكار بمشاركة آلاف الخبراء والرواد حول العالم'
+        : 'Tech & Innovation Conference Opens with Global Industry Leaders',
+      subtitle: lang === 'AR'
+        ? 'استعراض أحدث الابتكارات التقنية في الروبوتات والحوسبة الكمية وتطبيقات المستقبل.'
+        : 'Showcasing breakthroughs in robotics, quantum computing, and emerging tech applications.',
+      date: lang === 'AR' ? 'منذ 5 ساعات' : '5 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-9',
+      category: lang === 'AR' ? 'سياسة' : 'POLITICS',
+      categorySlug: 'politics' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'إصلاحات تشريعية جديدة لتعزيز الشفافية وحوكمة المؤسسات العامة'
+        : 'New Legislative Reforms Aim to Strengthen Institutional Transparency',
+      subtitle: lang === 'AR'
+        ? 'حزمة قوانين جديدة تهدف إلى تطوير الآليات الرقابية والمساءلة المؤسسية.'
+        : 'Comprehensive legal frameworks introduced to boost governance standards and accountability.',
+      date: lang === 'AR' ? 'منذ 5 ساعات' : '5 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-10',
+      category: lang === 'AR' ? 'مجتمع' : 'SOCIETY',
+      categorySlug: 'society' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'توسع ملحوظ في برامج التعليم الرقمي والتدريب المهني للشباب'
+        : 'Significant Expansion in Digital Learning and Vocational Training for Youth',
+      subtitle: lang === 'AR'
+        ? 'منصات تعليمية مجانية تمكّن آلاف الطلاب من اكتساب مهارات تقنية متقدمة لسوق العمل.'
+        : 'Open educational programs enabling students to acquire high-demand digital skills.',
+      date: lang === 'AR' ? 'منذ 6 ساعات' : '6 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-11',
+      category: lang === 'AR' ? 'علوم' : 'SCIENCE',
+      categorySlug: 'science' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'دراسة بيئية جديدة تحذر من تسارع انحسار الأنهار الجليدية في القطب الشمالي'
+        : 'Environmental Study Warns of Accelerating Glacial Melting in Arctic',
+      subtitle: lang === 'AR'
+        ? 'بيانات الأقمار الصناعية تسجل درجات حرارة قياسية تؤثر على الأنظمة المناخية العالمية.'
+        : 'Satellite measurements show record temperatures impacting global weather cycles.',
+      date: lang === 'AR' ? 'منذ 6 ساعات' : '6 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-12',
+      category: lang === 'AR' ? 'ثقافة' : 'CULTURE',
+      categorySlug: 'culture' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'مهرجان سينمائي يحتفي بالأفلام الوثائقية والروايات الإنسانية المؤثرة'
+        : 'Film Festival Honors Groundbreaking Documentaries and Human Stories',
+      subtitle: lang === 'AR'
+        ? 'عروض مميزة لأعمال تسلط الضوء على الهوية والذاكرة والتنوع الثقافي في العالم.'
+        : 'A showcase of compelling storytelling examining identity, cultural diversity, and heritage.',
+      date: lang === 'AR' ? 'منذ 7 ساعات' : '7 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-13',
+      category: lang === 'AR' ? 'اقتصاد' : 'ECONOMY',
+      categorySlug: 'economy' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'قطاع التجارة الإلكترونية يسجل أرقاماً قياسية في حجم المبيعات الشهرية'
+        : 'E-Commerce Sector Sets Record Volume in Monthly Consumer Sales',
+      subtitle: lang === 'AR'
+        ? 'تزايد الاعتماد على حلول الدفع الرقمي والخدمات اللوجستية السريعة في الأسواق الإقليمية.'
+        : 'Rapid adoption of fintech payment systems drives significant commercial expansion.',
+      date: lang === 'AR' ? 'منذ 7 ساعات' : '7 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1556742049-0a67e557224f?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-14',
+      category: lang === 'AR' ? 'الأخبار' : 'NEWS',
+      categorySlug: 'news' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'تطوير شبكات النقل الذكي وتدشين خطوط قطارات كهربائية سريعة جديدة'
+        : 'Smart Transit Expansion: New High-Speed Electric Rail Corridors Launched',
+      subtitle: lang === 'AR'
+        ? 'مشاريع بنية تحتية مستدامة تهدف إلى تقليل الانبعاثات وتسهيل حركة التنقل بين المدن.'
+        : 'Sustainable urban transit projects reducing emissions and linking metropolitan hubs.',
+      date: lang === 'AR' ? 'منذ 8 ساعات' : '8 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-15',
+      category: lang === 'AR' ? 'سياسة' : 'POLITICS',
+      categorySlug: 'politics' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'اتفاقات تجارية دولية جديدة تهدف إلى إزالة الحواجز الجمركية بين القارات'
+        : 'New Trade Treaties Aim to Lower Tariffs Across Global Corridors',
+      subtitle: lang === 'AR'
+        ? 'مساعٍ دولية لتعزيز سلاسل الإمداد ومكافحة التباطؤ التجاري عبر تخفيض الرسوم.'
+        : 'Strategic negotiations underway to bolster supply chain security and export volume.',
+      date: lang === 'AR' ? 'منذ 8 ساعات' : '8 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-16',
+      category: lang === 'AR' ? 'علوم' : 'SCIENCE',
+      categorySlug: 'science' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'أبحاث جينية واعدة تفتح الباب لعلاجات مخصصة للأمراض المزمنة المعقدة'
+        : 'Breakthrough Genetic Research Paves Way for Targeted Chronic Therapies',
+      subtitle: lang === 'AR'
+        ? 'علماء ينجحون في تحديد مسارات بيولوجية دقيقة تسهم في تسريع تطوير الأدوية الفعالة.'
+        : 'Biomedical researchers map molecular pathways that speed up precision medicine design.',
+      date: lang === 'AR' ? 'منذ 9 ساعات' : '9 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-17',
+      category: lang === 'AR' ? 'مجتمع' : 'SOCIETY',
+      categorySlug: 'society' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'حملات توعوية وطنية تركز على تعزيز الصحة النفسية والرفاه الاجتماعي'
+        : 'National Campaigns Focus on Promoting Mental Health and Wellbeing',
+      subtitle: lang === 'AR'
+        ? 'مبادرات لتقديم الاستشارات المتخصصة وتوفير الدعم النفسي في بيئات العمل والمدارس.'
+        : 'Public wellness drives providing accessible counseling resources and support networks.',
+      date: lang === 'AR' ? 'منذ 10 ساعات' : '10 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-18',
+      category: lang === 'AR' ? 'ثقافة' : 'CULTURE',
+      categorySlug: 'culture' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'إعادة افتتاح متاحف تاريخية كبرى بعد مشاريع ترميم وتطوير تقني شاملة'
+        : 'Major Historical Museums Reopen Following State-of-the-Art Restorations',
+      subtitle: lang === 'AR'
+        ? 'تقنيات الواقع الافتراضي والعرض التفاعلي تمنح الزوار تجربة غامرة لاكتشاف الآثار.'
+        : 'Interactive digital exhibits allow visitors to explore antiquities like never before.',
+      date: lang === 'AR' ? 'منذ 11 ساعة' : '11 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-19',
+      category: lang === 'AR' ? 'اقتصاد' : 'ECONOMY',
+      categorySlug: 'economy' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'تقرير اقتصادي يتوقع انتعاش قطاع السياحة والسفر بنسبة 18% هذا العام'
+        : 'Economic Outlook Forecasts 18% Travel & Hospitality Surge This Year',
+      subtitle: lang === 'AR'
+        ? 'إقبال غير مسبوق على الوجهات السياحية وتوسع في رحلات الطيران الدولية.'
+        : 'Rising consumer demand drives airline capacity expansions and hotel bookings.',
+      date: lang === 'AR' ? 'منذ 12 ساعة' : '12 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-20',
+      category: lang === 'AR' ? 'الأخبار' : 'NEWS',
+      categorySlug: 'news' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'إطلاق قمر صناعي متطور لمراقبة المحيطات والتنبؤ بالعواصف المدارية'
+        : 'Advanced Satellite Launched to Monitor Ocean Currents and Predict Storms',
+      subtitle: lang === 'AR'
+        ? 'أجهزة استشعار دقيقة توفر بيانات فورية لدعم فرق الطوارئ ومواجهة الكوارث الطبيعية.'
+        : 'Precision orbital sensors deliver real-time data to bolster disaster readiness.',
+      date: lang === 'AR' ? 'منذ 13 ساعة' : '13 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1517976487507-5b3b4b45f470?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-21',
+      category: lang === 'AR' ? 'علوم' : 'SCIENCE',
+      categorySlug: 'science' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'تطوير بطاريات مائية جديدة آمنة وعالية الكفاءة لتخزين طاقة الشبكات'
+        : 'New Safe, High-Capacity Water Batteries Developed for Grid Storage',
+      subtitle: lang === 'AR'
+        ? 'ابتكار كيميائي يحل مشاكل الحرائق والتحلل في بطاريات الليثيوم التقليدية.'
+        : 'Novel aqueous battery chemistry eliminates fire hazards in large-scale energy banks.',
+      date: lang === 'AR' ? 'منذ 14 ساعة' : '14 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-22',
+      category: lang === 'AR' ? 'سياسة' : 'POLITICS',
+      categorySlug: 'politics' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'مؤتمر دولي للأمن السيبراني يحذر من الهجمات الموجهة للبنى التحتية الحيوية'
+        : 'Global Cybersecurity Forum Warns of Coordinated Critical Infrastructure Threats',
+      subtitle: lang === 'AR'
+        ? 'توصيات بإنشاء خطوط دفاع رقمية مشتركة وتبادل فوري لمعلومات التهديدات السيبرانية.'
+        : 'Policy experts urge cross-border incident response protocols and shared threat intelligence.',
+      date: lang === 'AR' ? 'منذ 15 ساعة' : '15 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-23',
+      category: lang === 'AR' ? 'مجتمع' : 'SOCIETY',
+      categorySlug: 'society' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'مبادرة زراعية حضرية تحول أسطح المباني في المدن إلى حدائق منتجة'
+        : 'Urban Farming Initiative Transforms Rooftops into Thriving Community Gardens',
+      subtitle: lang === 'AR'
+        ? 'حلول مبتكرة للزراعة العمودية تساهم في تحقيق الأمن الغذائي المحلي وتقليل البصمة الكربونية.'
+        : 'Vertical farming solutions boost local produce supplies while greening urban skylines.',
+      date: lang === 'AR' ? 'منذ 16 ساعة' : '16 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      id: 'news-24',
+      category: lang === 'AR' ? 'ثقافة' : 'CULTURE',
+      categorySlug: 'culture' as const,
+      imageType: 'photo' as const,
+      title: lang === 'AR'
+        ? 'صدور كتاب جديد يوثق مسيرة الأدب العربي المعاصر وتأثيره في الفكر الإنساني'
+        : 'New Anthology Explores Modern Arabic Literature and Global Thought',
+      subtitle: lang === 'AR'
+        ? 'قراءات نقدية شاملة لأبرز النصوص الأدبية التي شكلت الوعي الثقافي خلال القرن الماضي.'
+        : 'Comprehensive critical essays examining landmark literary texts and cultural dialogue.',
+      date: lang === 'AR' ? 'منذ 18 ساعة' : '18 hours ago',
+      imageUrl: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80',
+    },
+  ], [lang]);
+
+  // Latest news list (styled like 'تقارير ذات صلة' in Article page):
+  // Strictly 24 articles on homepage, and completely excluded from hero articles (lead + 3 secondary cards)
   const latestNewsList = useMemo(() => {
-    if (articles && articles.length > 0) {
-      return articles.slice(0, 12);
+    // 1. Filter out all articles that appear in the hero section
+    const nonHeroArticles = (articles || []).filter((a) => !heroArticleIds.has(a.id));
+
+    // 2. If we have at least 24 real articles from DB, use the top 24
+    if (nonHeroArticles.length >= 24) {
+      return nonHeroArticles.slice(0, 24);
     }
-    return [
-      {
-        id: 'news-1',
-        category: lang === 'AR' ? 'علوم' : 'SCIENCE',
-        categorySlug: 'science',
-        imageType: 'photo' as const,
-        title: lang === 'AR'
-          ? 'طفرة جديدة في الذكاء الاصطناعي تثير جدلاً عالمياً حول قوانين الخصوصية'
-          : 'New AI Breakthrough Sparks Global Debate On Privacy Laws',
-        subtitle: lang === 'AR'
-          ? 'مخاوف متصاعدة بين الهيئات التنظيمية حول سلامة جمع واستخدام البيانات الرقمية في النماذج الحديثة.'
-          : 'Growing scrutiny across regulatory bodies over digital data protection and ethical model standards.',
-        date: lang === 'AR' ? 'منذ ساعتين' : '2 hours ago',
-        imageUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
-      },
-      {
-        id: 'news-2',
-        category: lang === 'AR' ? 'اقتصاد' : 'ECONOMY',
-        categorySlug: 'economy',
-        imageType: 'photo' as const,
-        title: lang === 'AR'
-          ? 'الأسواق العالمية تتقلب عقب إعلان أسعار الفائدة من بنك الاحتياطي الفيدرالي'
-          : 'Global Markets Fluctuate Following Federal Reserve Interest Rates Announcement',
-        subtitle: lang === 'AR'
-          ? 'ردود فعل متباينة في مؤشرات الأسهم العالمية وترقب لتأثير القرارات على حركة التضخم.'
-          : 'Mixed reactions across major stock indices as analysts assess the longer-term inflationary trends.',
-        date: lang === 'AR' ? 'منذ 3 ساعات' : '3 hours ago',
-        imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=600&q=80',
-      },
-      {
-        id: 'news-3',
-        category: lang === 'AR' ? 'سياسة' : 'POLITICS',
-        categorySlug: 'politics',
-        imageType: 'photo' as const,
-        title: lang === 'AR'
-          ? 'نهائيات البطولة: الفريق غير المرشح ينتزع فوزاً تاريخياً في الوقت الإضافي'
-          : 'Championship Finals: Underdog Team Clinches Historic Victory in Overtime',
-        subtitle: lang === 'AR'
-          ? 'أجواء حماسية وتتويج مستحق بعد أداء استثنائي أدهش الجماهير والمحللين الرياضيين.'
-          : 'An astonishing display of resilience and dramatic overtime goals secure a landmark championship victory.',
-        date: lang === 'AR' ? 'منذ 5 ساعات' : '5 hours ago',
-        imageUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80',
-      },
-      {
-        id: 'news-4',
-        category: lang === 'AR' ? 'ثقافة' : 'CULTURE',
-        categorySlug: 'culture',
-        imageType: 'photo' as const,
-        title: lang === 'AR'
-          ? 'معرض فني دولي يستعرض التراث المعماري القديم في العواصم التاريخية'
-          : 'International Art Exhibition Showcases Ancient Architectural Heritage',
-        subtitle: lang === 'AR'
-          ? 'أعمال توثيقية نادرة تسلط الضوء على الفنون المعمارية العريقة وأصالة التصميم عبر العصور.'
-          : 'Rare documentary artworks highlighting ancient architectural traditions across historical capitals.',
-        date: lang === 'AR' ? 'منذ 6 ساعات' : '6 hours ago',
-        imageUrl: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=600&q=80',
-      },
-      {
-        id: 'news-5',
-        category: lang === 'AR' ? 'مجتمع' : 'SOCIETY',
-        categorySlug: 'society',
-        imageType: 'photo' as const,
-        title: lang === 'AR'
-          ? 'مبادرات تطوعية شبابية تعزز الاستدامة البيئية في المدن الحضرية'
-          : 'Youth Volunteer Initiatives Promote Environmental Sustainability in Urban Cities',
-        subtitle: lang === 'AR'
-          ? 'حملات مجتمعية واسعة لزيادة المساحات الخضراء والحد من التلوث البيئي في الأحياء السكنية.'
-          : 'Broad community campaigns to expand green spaces and reduce urban pollution in residential areas.',
-        date: lang === 'AR' ? 'منذ 7 ساعات' : '7 hours ago',
-        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=600&q=80',
-      },
-      {
-        id: 'news-6',
-        category: lang === 'AR' ? 'علوم' : 'SCIENCE',
-        categorySlug: 'science',
-        imageType: 'photo' as const,
-        title: lang === 'AR'
-          ? 'اكتشاف كوكبي جديد يفتح آفاقاً جديدة في أبحاث الفضاء والفيزياء الفلكية'
-          : 'New Exoplanet Discovery Opens New Horizons in Astrophysics Research',
-        subtitle: lang === 'AR'
-          ? 'تلسكوبات فضائية ترصد غلافاً جوياً فريداً لكوكب خارج المجموعة الشمسية.'
-          : 'Deep space observatories detect a unique atmospheric composition on an exoplanet far beyond.',
-        date: lang === 'AR' ? 'منذ 8 ساعات' : '8 hours ago',
-        imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
-      },
-    ];
-  }, [articles, lang]);
+
+    // 3. Otherwise, merge available non-hero DB articles with distinct fallback cards to guarantee exactly 24
+    const result: ScopeArticle[] = [...nonHeroArticles];
+    const existingIds = new Set(result.map((a) => a.id));
+
+    for (const fb of fallbackNews24) {
+      if (result.length >= 24) break;
+      if (!existingIds.has(fb.id) && !heroArticleIds.has(fb.id)) {
+        result.push(fb);
+        existingIds.add(fb.id);
+      }
+    }
+
+    return result.slice(0, 24);
+  }, [articles, heroArticleIds, fallbackNews24]);
 
   // Auto rotate carousel indicators
   useEffect(() => {
@@ -430,13 +713,13 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
           </div>
         </div>
 
-        {/* Mobile View: 3 Rotating cards with carousel navigation, blue box reaches middle of photo */}
+        {/* Mobile View: 3 Rotating cards with carousel navigation, fixed size blue box accommodating 3 lines of title */}
         <div className="md:hidden absolute bottom-0 end-0 z-20">
-          <div className="relative max-w-[215px] px-3.5 pb-3.5 pe-4">
-            {/* The Blue Box background: top edge reaches vertical midpoint of photo */}
-            <div className="absolute inset-x-0 bottom-0 top-[55px] bg-[#163750] rounded-none shadow-2xl -z-10" />
+          <div className="relative w-[215px] px-3.5 pb-3.5 pe-4">
+            {/* The Blue Box background: top edge reaches vertical midpoint of photo (fixed size) */}
+            <div className="absolute inset-x-0 bottom-0 top-[57px] bg-[#163750] rounded-none shadow-2xl -z-10" />
 
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col justify-between h-[230px]">
               {(() => {
                 const mobileCard = activeHeroCards[carouselIndex % 3];
                 return (
@@ -454,11 +737,12 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
                       />
                     </div>
 
-                    <span className="inline-block px-1.5 py-0.5 text-[8px] font-bold bg-white text-[#163750] rounded-none shadow-xs mb-1">
+                    <span className="inline-block px-1.5 py-0.5 text-[8px] font-bold bg-white text-[#163750] rounded-none shadow-xs mb-1.5">
                       {mobileCard.category}
                     </span>
 
-                    <h4 className="text-[10px] font-bold text-white line-clamp-3 leading-tight">
+                    {/* Fixed 3-line title: truncates with ellipsis (...) after 3 lines */}
+                    <h4 className="text-[11px] font-bold text-white leading-[1.35] h-[45px] line-clamp-3 overflow-hidden text-ellipsis">
                       {mobileCard.title}
                     </h4>
 
@@ -470,7 +754,7 @@ export const ScopeHeroGrid: React.FC<ScopeHeroGridProps> = ({
               })()}
 
               {/* 3 Indicator Dashes for mobile */}
-              <div className="flex items-center justify-center gap-1 pt-2 mt-1">
+              <div className="flex items-center justify-center gap-1 pt-1.5">
                 {[0, 1, 2].map((i) => (
                   <button
                     key={i}

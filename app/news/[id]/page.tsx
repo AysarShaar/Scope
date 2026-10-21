@@ -236,15 +236,19 @@ export default async function ArticlePage({ params }: PageProps) {
 
       <main className="flex-1 w-full">
         <div className="max-w-[920px] mx-auto w-full px-4 sm:px-6 pt-6 sm:pt-10 pb-2">
-          <article className="w-full space-y-6">
+          <article className="w-full space-y-6 font-article">
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800/80 text-xs">
               <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-1 bg-[#A42424] text-white font-bold text-xs rounded-md shadow-2xs">
+                <Link
+                  href={`/category/${article.categorySlug}`}
+                  prefetch={false}
+                  className="text-xs sm:text-[13px] font-bold text-[#A42424] dark:text-[#E05252] hover:opacity-80 transition-opacity"
+                >
                   {article.category}
-                </span>
+                </Link>
               </div>
 
-              <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
+              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-sans text-[13px]">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                 <span>{article.date}</span>
               </div>
@@ -271,7 +275,7 @@ export default async function ArticlePage({ params }: PageProps) {
               )}
             </div>
 
-            <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 rtl:text-right ltr:text-left">
+            <div className="space-y-6 text-base sm:text-lg lg:text-[19px] leading-relaxed lg:leading-[2.2] text-slate-800 dark:text-slate-200 font-normal pt-2 rtl:text-right ltr:text-left [word-spacing:-0.03em]">
               {article.content && article.content.length > 0 ? (
                 <ArticleBody content={article.content} title={article.title} />
               ) : (

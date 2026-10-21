@@ -61,6 +61,6 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const initialData = await getHomeBootstrap().catch(() => null);
+  const initialData = await getHomeBootstrap(36).catch(() => null);
   return <HomeClient initialData={initialData} />;
 }
