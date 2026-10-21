@@ -105,3 +105,4 @@ npx wrangler d1 execute DB --remote --file=cloudinary-migration/migrate.sql
 ```
 
 لا يحذف شيئاً من Cloudinary ولا يغيّر قاعدة البيانات؛ ملف `migrate.sql` تراجعه ثم تشغّله بنفسك.
+# Scope
