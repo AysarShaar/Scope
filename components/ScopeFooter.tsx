@@ -15,34 +15,24 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
   const { t } = useLanguage();
 
   return (
-    <footer className="w-full bg-[#0F4468] text-white/90 border-t border-[#0b334f] pt-12 pb-8 mt-16 text-xs overflow-hidden">
+    <footer className="w-full bg-[#0a1526] text-white/90 border-t border-white/10 pt-12 pb-8 mt-16 text-xs overflow-hidden">
       <div className="max-w-[1480px] mx-auto px-4 sm:px-6 space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-[#145785]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-white/10">
           <div className="lg:col-span-2 space-y-3.5">
             <Link href="/" prefetch={false} className="inline-block" aria-label="SCOPE MEDIA">
               <ScopeLogo variant="white" className="h-11 sm:h-12 w-auto" />
             </Link>
 
-            <p className="text-blue-100/90 text-xs sm:text-[13px] leading-relaxed max-w-md font-normal">
+            <p className="text-slate-300 text-xs sm:text-[13px] leading-relaxed max-w-md font-normal">
               {t.footer.mission}
             </p>
           </div>
 
           <div className="space-y-2.5">
-            <h4 className="font-bold text-white text-sm pb-1 border-b border-[#145785]">
+            <h4 className="font-bold text-white text-sm pb-1 border-b border-white/10">
               {t.footer.newsSections}
             </h4>
-            <ul className="space-y-2 text-blue-100/80">
-              <li>
-                <Link
-                  href="/"
-                  prefetch={false}
-                  onClick={() => onSelectTab?.('home')}
-                  className="hover:text-white transition-colors cursor-pointer block"
-                >
-                  {t.nav.home}
-                </Link>
-              </li>
+            <ul className="space-y-2 text-slate-300">
               <li>
                 <Link
                   href="/category/news"
@@ -51,6 +41,16 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
                   className="hover:text-white transition-colors cursor-pointer block"
                 >
                   {t.nav.news}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/category/politics"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('politics')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.politics}
                 </Link>
               </li>
               <li>
@@ -65,22 +65,22 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
               </li>
               <li>
                 <Link
-                  href="/category/culture"
-                  prefetch={false}
-                  onClick={() => onSelectTab?.('culture')}
-                  className="hover:text-white transition-colors cursor-pointer block"
-                >
-                  {t.nav.culture}
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/category/society"
                   prefetch={false}
                   onClick={() => onSelectTab?.('society')}
                   className="hover:text-white transition-colors cursor-pointer block"
                 >
                   {t.nav.society}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/category/culture"
+                  prefetch={false}
+                  onClick={() => onSelectTab?.('culture')}
+                  className="hover:text-white transition-colors cursor-pointer block"
+                >
+                  {t.nav.culture}
                 </Link>
               </li>
               <li>
@@ -97,10 +97,10 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
           </div>
 
           <div className="space-y-2.5">
-            <h4 className="font-bold text-white text-sm pb-1 border-b border-[#145785]">
+            <h4 className="font-bold text-white text-sm pb-1 border-b border-white/10">
               {t.footer.showsAndMedia}
             </h4>
-            <ul className="space-y-2 text-blue-100/80">
+            <ul className="space-y-2 text-slate-300">
               <li>
                 <Link
                   href="/programs"
@@ -134,10 +134,10 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
           </div>
 
           <div className="space-y-2.5">
-            <h4 className="font-bold text-white text-sm pb-1 border-b border-[#145785]">
+            <h4 className="font-bold text-white text-sm pb-1 border-b border-white/10">
               {t.footer.institution}
             </h4>
-            <ul className="space-y-2 text-blue-100/80">
+            <ul className="space-y-2 text-slate-300">
               <li>
                 <Link
                   href="/privacy"
@@ -160,13 +160,13 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-blue-200/80 text-[11px]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-[11px]">
           <div>
             {t.footer.copyright}
           </div>
 
           <div className="flex items-center gap-2.5 sm:gap-3 text-white">
-            <span className="text-xs font-semibold text-blue-200/90 ml-1 hidden sm:inline-block">
+            <span className="text-xs font-semibold text-slate-300 ml-1 hidden sm:inline-block">
               {t.footer.followUs}
             </span>
 
@@ -174,7 +174,7 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
               href="https://youtube.com"
               target="_blank"
               rel="noreferrer"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-[#A42424] hover:border-red-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(220,38,38,0.4)] active:scale-95 cursor-pointer group shadow-sm"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all duration-300 hover:bg-[#A42424] hover:border-red-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(220,38,38,0.4)] active:scale-95 cursor-pointer group shadow-sm"
               title="يوتيوب - SCOPE MEDIA"
               aria-label="YouTube"
             >
@@ -185,7 +185,7 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
               href="https://x.com"
               target="_blank"
               rel="noreferrer"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-black hover:border-slate-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(255,255,255,0.25)] active:scale-95 cursor-pointer group shadow-sm"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all duration-300 hover:bg-black hover:border-slate-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(255,255,255,0.25)] active:scale-95 cursor-pointer group shadow-sm"
               title="منصة إكس - SCOPE MEDIA"
               aria-label="X"
             >
@@ -198,7 +198,7 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
               href={FACEBOOK_URL}
               target="_blank"
               rel="noreferrer"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-[#1877f2] hover:border-[#1877f2] hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(24,119,242,0.4)] active:scale-95 cursor-pointer group shadow-sm"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all duration-300 hover:bg-[#1877f2] hover:border-[#1877f2] hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(24,119,242,0.4)] active:scale-95 cursor-pointer group shadow-sm"
               title="فيسبوك - SCOPE MEDIA"
               aria-label="Facebook"
             >
@@ -209,7 +209,7 @@ export const ScopeFooter: React.FC<ScopeFooterProps> = ({ onSelectTab }) => {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noreferrer"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0b334f] border border-[#135784] text-white flex items-center justify-center transition-all duration-300 hover:bg-gradient-to-tr hover:from-[#f58529] hover:via-[#dd2a7b] hover:to-[#8134af] hover:border-transparent hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(221,42,123,0.4)] active:scale-95 cursor-pointer group shadow-sm"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all duration-300 hover:bg-gradient-to-tr hover:from-[#f58529] hover:via-[#dd2a7b] hover:to-[#8134af] hover:border-transparent hover:text-white hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(221,42,123,0.4)] active:scale-95 cursor-pointer group shadow-sm"
               title="إنستغرام - SCOPE MEDIA"
               aria-label="Instagram"
             >

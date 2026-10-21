@@ -94,6 +94,7 @@ export default function HomeClient({ initialData }: { initialData: HomeBootstrap
     >
       <ScopeHeader
         currentTab="home"
+        transparentOverlay={true}
         onOpenLive={() => setIsLiveOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         currentLang={lang}
@@ -101,37 +102,35 @@ export default function HomeClient({ initialData }: { initialData: HomeBootstrap
         breakingNews={initialData?.breaking}
       />
 
-      <main className="flex-1 max-w-[1480px] mx-auto w-full px-3 sm:px-6 pt-5">
-        <h1 className="sr-only">
-          {lang === 'AR'
-            ? 'سكوب ميديا | تغطيات إخبارية حية وتحقيقات استقصائية - ما وراء العناوين'
-            : 'SCOPE MEDIA | Live Breaking News & In-Depth Investigations - Beyond The Headlines'}
-        </h1>
+      <h1 className="sr-only">
+        {lang === 'AR'
+          ? 'سكوب ميديا | تغطيات إخبارية حية وتحقيقات استقصائية - ما وراء العناوين'
+          : 'SCOPE MEDIA | Live Breaking News & In-Depth Investigations - Beyond The Headlines'}
+      </h1>
 
-        <div className="space-y-7">
-          <ScopeHeroGrid
-            special={special}
-            specialArticles={specialArticles}
-            articles={articles}
-            shows={programs}
+      <ScopeHeroGrid
+        special={special}
+        specialArticles={specialArticles}
+        articles={articles}
+        shows={programs}
+        isLoading={isLoading}
+        onOpenShow={(show) => router.push(`/programs/${show.id}`)}
+        onViewMoreNews={() => router.push('/category/news')}
+        onViewMoreReports={() => router.push('/category/investigations')}
+        onViewAllShows={() => router.push('/programs')}
+        onOpenLive={() => setIsLiveOpen(true)}
+        showProgramsInside={false}
+        onSelectTag={handleSelectTag}
+      />
+
+      <main className="flex-1 max-w-[1480px] mx-auto w-full px-4 sm:px-6 pb-12">
+        <div className="pt-2">
+          <ScopeProgramsRow
             isLoading={isLoading}
+            shows={programs}
             onOpenShow={(show) => router.push(`/programs/${show.id}`)}
-            onViewMoreNews={() => router.push('/category/news')}
-            onViewMoreReports={() => router.push('/category/investigations')}
             onViewAllShows={() => router.push('/programs')}
-            onOpenLive={() => setIsLiveOpen(true)}
-            showProgramsInside={false}
-            onSelectTag={handleSelectTag}
           />
-
-          <div className="pt-2">
-            <ScopeProgramsRow
-              isLoading={isLoading}
-              shows={programs}
-              onOpenShow={(show) => router.push(`/programs/${show.id}`)}
-              onViewAllShows={() => router.push('/programs')}
-            />
-          </div>
         </div>
       </main>
 
