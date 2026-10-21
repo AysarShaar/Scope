@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "غير مصرح: إدارة المحررين وتوزيع الصلاحيات مقتصرة على مدراء النظام المصرح لهم",
+        error: "ليس لديك صلاحية لإدارة فريق التحرير",
       },
       { status: 403 },
     );
@@ -114,14 +114,14 @@ export async function POST(request: NextRequest) {
 
     if (!body.name || !body.name.trim()) {
       return NextResponse.json(
-        { success: false, error: "الاسم مطلوب" },
+        { success: false, error: "يرجى إدخال الاسم" },
         { status: 400 },
       );
     }
 
     if (!body.email || !body.email.trim()) {
       return NextResponse.json(
-        { success: false, error: "البريد الإلكتروني مطلوب" },
+        { success: false, error: "يرجى إدخال البريد الإلكتروني" },
         { status: 400 },
       );
     }
@@ -132,8 +132,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "صيغة البريد الإلكتروني غير صحيحة، يجب أن يحتوي على اسم المستخدم ورمز @ ونطاق صالح (مثال: name@domain.com)",
+          error: "يرجى إدخال بريد إلكتروني صالح",
         },
         { status: 400 },
       );
@@ -143,14 +142,14 @@ export async function POST(request: NextRequest) {
     if (body.permissions !== undefined) {
       if (!Array.isArray(body.permissions)) {
         return NextResponse.json(
-          { success: false, error: "حقل permissions يجب أن يكون مصفوفة" },
+          { success: false, error: "تنسيق الصلاحيات غير صالح" },
           { status: 400 },
         );
       }
       for (const p of body.permissions) {
         if (!isKnownPermission(p)) {
           return NextResponse.json(
-            { success: false, error: `صلاحية غير معروفة مرفوضة: ${String(p)}` },
+            { success: false, error: `صلاحية غير صالحة: ${String(p)}` },
             { status: 400 },
           );
         }
@@ -164,7 +163,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `غير مصرح: لا يمكنك منح صلاحية لا تملكها بنفسك (${p})`,
+            error: `لا يمكنك منح صلاحية لا يمتلكها حسابك (${p})`,
           },
           { status: 403 },
         );
@@ -176,7 +175,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "غير مصرح: منح صلاحية إدارة المحررين (editors.manage) مقتصر حصراً على مدير الطوارئ (ADMIN_EMAILS)",
+          error: "منح صلاحية إدارة المحررين متاح للمدير العام فقط",
         },
         { status: 403 },
       );

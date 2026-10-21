@@ -27,6 +27,9 @@ export interface Translations {
     menu: string;
     switchLangTitle: string;
     currentLangDisplay: string;
+    loginRegister?: string;
+    phone?: string;
+    email?: string;
   };
   sidebar: {
     breakingNews: string;
@@ -49,6 +52,10 @@ export interface Translations {
     specialBadge: string;
     minRead: string;
     readArticle: string;
+    breakingNewsBadge?: string;
+    readMore?: string;
+    editorsPick?: string;
+    videoPlay?: string;
     newsletterTitle: string;
     newsletterSubtitle: string;
     newsletterPlaceholder: string;
@@ -169,6 +176,9 @@ export const translations: Record<Language, Translations> = {
       menu: 'القائمة',
       switchLangTitle: 'تبديل اللغة إلى English',
       currentLangDisplay: 'AR',
+      loginRegister: 'تسجيل الدخول / حساب',
+      phone: '+123-456-7880',
+      email: 'info@newsbeat.com',
     },
     sidebar: {
       breakingNews: 'شريط الأخبار العاجلة',
@@ -184,13 +194,17 @@ export const translations: Record<Language, Translations> = {
     hero: {
       exclusiveShows: 'برامج SCOPE MEDIA الحصرية',
       fullShowsGuide: 'دليل البرامج الكامل',
-      latestNews: 'أحدث الأخبار والتحليلات',
+      latestNews: 'آخر الأخبار',
       moreNews: 'المزيد من الأخبار',
       exclusiveReports: 'تقارير وتحقيقات حصرية',
       allInvestigations: 'جميع التحقيقات',
       specialBadge: 'خاص',
       minRead: 'دقيقة قراءة',
       readArticle: 'قراءة المقال',
+      breakingNewsBadge: 'أخبار عاجلة',
+      readMore: 'قراءة المزيد',
+      editorsPick: 'اختيار المحرر',
+      videoPlay: 'تشغيل الفيديو',
       newsletterTitle: 'نشرة SCOPE MEDIA البريدية',
       newsletterSubtitle: 'اشترك لتصلك أهم التحليلات الاستقصائية ورؤى الخبراء في بريدك أسبوعياً',
       newsletterPlaceholder: 'أدخل بريدك الإلكتروني...',
@@ -309,6 +323,9 @@ export const translations: Record<Language, Translations> = {
       menu: 'Menu',
       switchLangTitle: 'Switch language to العربية',
       currentLangDisplay: 'EN',
+      loginRegister: 'Log in/Register',
+      phone: '+123-456-7880',
+      email: 'info@newsbeat.com',
     },
     sidebar: {
       breakingNews: 'Breaking News Feed',
@@ -324,13 +341,17 @@ export const translations: Record<Language, Translations> = {
     hero: {
       exclusiveShows: 'Exclusive SCOPE Shows',
       fullShowsGuide: 'Full Shows Guide',
-      latestNews: 'Latest News & Analyses',
+      latestNews: 'LATEST NEWS',
       moreNews: 'More News',
       exclusiveReports: 'Exclusive Reports & Investigations',
       allInvestigations: 'All Investigations',
       specialBadge: 'EXCLUSIVE',
       minRead: 'min read',
       readArticle: 'Read Story',
+      breakingNewsBadge: 'BREAKING NEWS',
+      readMore: 'Read more',
+      editorsPick: "EDITOR'S PICK",
+      videoPlay: 'video play',
       newsletterTitle: 'SCOPE MEDIA Newsletter',
       newsletterSubtitle: 'Subscribe to receive investigative deep-dives and expert analyses in your inbox weekly',
       newsletterPlaceholder: 'Enter your email address...',

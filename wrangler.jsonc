@@ -7,7 +7,7 @@
   // Custom domain already attached in the dashboard; keep it here so deploys do not remove it.
   "routes": [
     {
-      "pattern": "www.scope-media.net",
+      "pattern": "test.scope-media.net",
       "zone_name": "scope-media.net",
       "custom_domain": true
     }
