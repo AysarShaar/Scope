@@ -6,6 +6,7 @@ import { ScopeVisual } from '../../../components/ScopeVisual';
 import { ArticleInteractiveBar } from '../../../components/ArticleInteractiveBar';
 import { ArticleHeader } from '../../../components/ArticleHeader';
 import { ArticleNavigation } from '../../../components/ArticleNavigation';
+import { RelatedArticlesSidebar } from '../../../components/RelatedArticlesSidebar';
 import { ScopeFooter } from '../../../components/ScopeFooter';
 import { ArticleBody } from '../../../components/ArticleBody';
 import { contentToText } from '../../../lib/articleText';
@@ -236,9 +237,9 @@ export default async function ArticlePage({ params }: PageProps) {
 
       <main className="flex-1 w-full">
         <div className="max-w-[1480px] mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-10">
-          <div className="flex flex-col lg:flex-row-reverse items-start justify-between gap-8 lg:gap-10 xl:gap-14 relative">
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-10 xl:gap-14 relative">
             {/* Main Article (المقال والصورة) */}
-            {/* Mobile: Top. Desktop (lg): Left in RTL (Arabic), Right in LTR (English) */}
+            {/* Mobile: Top. Desktop (lg): Right in RTL (Arabic), Left in LTR (English) */}
             <article className="flex-1 min-w-0 max-w-[880px] xl:max-w-[920px] w-full space-y-6 font-article">
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800/80 text-xs">
                 <div className="flex items-center gap-2.5">
@@ -292,64 +293,9 @@ export default async function ArticlePage({ params }: PageProps) {
             </article>
 
             {/* Sidebar: Related Articles (مقالات ذات صلة) */}
-            {/* Mobile: Bottom (under article). Desktop (lg): Right in RTL (Arabic), Left in LTR (English) */}
-            {/* Sticky to scroll naturally with the page, without independent scrollbar */}
-            {relatedArticles.length > 0 && (
-              <aside className="w-full lg:w-[320px] xl:w-[360px] shrink-0 pt-8 lg:pt-0 border-t lg:border-t-0 border-slate-200 dark:border-slate-800 lg:sticky lg:top-24 lg:self-start z-10">
-                <div className="flex items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800 mb-5">
-                  <span className="w-1.5 h-5 bg-[#A42424] rounded-full inline-block" />
-                  <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                    تقارير ذات صلة
-                  </h2>
-                </div>
-
-                <div className="space-y-5">
-                  {relatedArticles.map((rel) => (
-                    <Link
-                      key={rel.id}
-                      href={`/news/${rel.id}`}
-                      prefetch={false}
-                      className="group block cursor-pointer border-b border-slate-200/80 dark:border-slate-800/80 pb-5 last:border-none last:pb-0"
-                    >
-                      {/* Image on top (Golden Ratio) */}
-                      <div className="relative aspect-[1.618/1] overflow-hidden rounded-[10px] bg-[#0d1624] mb-2.5">
-                        <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]">
-                          <ScopeVisual
-                            imageUrl={rel.imageUrl}
-                            type={rel.imageType}
-                            category={rel.categorySlug}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Category */}
-                      <span className="text-[11px] sm:text-xs font-extrabold text-[#A42424] dark:text-[#F27676] block mb-1">
-                        {rel.category}
-                      </span>
-
-                      {/* Title */}
-                      <h3 className="text-sm sm:text-[15px] font-black leading-[1.4] text-slate-900 dark:text-white transition-colors group-hover:text-[#A42424] dark:group-hover:text-[#F27676] line-clamp-2">
-                        {rel.title}
-                      </h3>
-
-                      {/* Subtitle */}
-                      {rel.subtitle && (
-                        <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2">
-                          {rel.subtitle}
-                        </p>
-                      )}
-
-                      {/* Date */}
-                      <div className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-400 font-sans">
-                        <Clock className="w-3.5 h-3.5 opacity-70" />
-                        <span>{rel.date}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </aside>
-            )}
+            {/* Mobile: Bottom (under article). Desktop (lg): Left in RTL (Arabic), Right in LTR (English) */}
+            {/* Starts scrolling down with page, then sticks when reaching its bottom edge */}
+            <RelatedArticlesSidebar articles={relatedArticles} />
           </div>
         </div>
 
